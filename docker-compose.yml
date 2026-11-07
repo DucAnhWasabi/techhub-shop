@@ -1,0 +1,91 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build: .
+    command: ["npm", "run", "start:web"]
+    environment:
+      WEB_PORT: 3001
+      API_INTERNAL_URL: http://backend:3000
+    expose:
+      - "3001"
+    restart: unless-stopped
+
+  backend:
+    build: .
+    command: ["npm", "run", "start:api"]
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-techhub}:${POSTGRES_PASSWORD:-change-this-local-password}@db:5432/${POSTGRES_DB:-techhub}
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:-local-development-session-secret-change-me}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@techhub.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!ChangeMe}
+    expose:
+      - "3000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: any
+    restart: unless-stopped
+
+  seed:
+    build: .
+    command: ["npm", "run", "seed"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-techhub}:${POSTGRES_PASSWORD:-change-this-local-password}@db:5432/${POSTGRES_DB:-techhub}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@techhub.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!ChangeMe}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-techhub}
+      POSTGRES_USER: ${POSTGRES_USER:-techhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-local-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

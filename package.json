@@ -1,0 +1,23 @@
+{
+  "name": "techhub-shop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Do an Node.js e-commerce may tinh va linh kien",
+  "main": "src/server.js",
+  "scripts": {
+    "start:api": "node src/server.js",
+    "start:web": "node frontend/server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-redis": "^7.1.1",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.2",
+    "pg": "^8.13.1"
+  }
+}
