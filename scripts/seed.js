@@ -62,6 +62,11 @@ async function seed() {
         `INSERT INTO users(email,full_name,password_hash,role) VALUES($1,$2,$3,'customer')
          ON CONFLICT(email) DO NOTHING`, [email, fullName, customerHash]
       );
+      await client.query(
+        `INSERT INTO addresses(user_id,recipient_name,line1,district,province,is_default)
+         SELECT u.id,$2,'12 Nguyễn Huệ','Quận 1','TP. Hồ Chí Minh',TRUE FROM users u WHERE u.email=$1
+         AND NOT EXISTS (SELECT 1 FROM addresses a WHERE a.user_id=u.id)`, [email, fullName]
+      );
     }
 
     for (const [index, [name, categoryName, brandName, price]] of products.entries()) {

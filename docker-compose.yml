@@ -31,12 +31,25 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-techhub}:${POSTGRES_PASSWORD:-change-this-local-password}@db:5432/${POSTGRES_DB:-techhub}
       REDIS_URL: redis://redis:6379
       SESSION_SECRET: ${SESSION_SECRET:-local-development-session-secret-change-me}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-TechHub <no-reply@techhub.local>}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@techhub.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!ChangeMe}
     expose:
       - "3000"
     depends_on:
       seed:
+        condition: service_completed_successfully
+      migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
@@ -53,6 +66,16 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-techhub}:${POSTGRES_PASSWORD:-change-this-local-password}@db:5432/${POSTGRES_DB:-techhub}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@techhub.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!ChangeMe}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  migrate:
+    build: .
+    command: ["node", "scripts/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-techhub}:${POSTGRES_PASSWORD:-change-this-local-password}@db:5432/${POSTGRES_DB:-techhub}
     depends_on:
       db:
         condition: service_healthy
