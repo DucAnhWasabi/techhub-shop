@@ -18,13 +18,11 @@
       <div class="eyebrow mb-3">BUILD YOUR NEXT</div>
       <h1 class="display-4 fw-bold">Cấu hình đúng.<br><span>Hiệu năng vượt trội.</span></h1>
       <p class="lead mt-3 mb-4">Laptop, màn hình và linh kiện máy tính được tuyển chọn cho góc làm việc của bạn.</p>
-      <a class="btn btn-info btn-lg fw-semibold" href="#san-pham">Khám phá sản phẩm</a>
+      <form class="search-bar d-flex gap-2 mt-4" action="/search" method="get"><input class="form-control form-control-lg" type="search" name="q" placeholder="Tìm laptop, RAM, CPU, màn hình…" required maxlength="100"><button class="btn btn-info btn-lg fw-semibold">Tìm kiếm</button></form>
     </section>
-    <div class="d-flex justify-content-between align-items-end mb-3" id="san-pham">
-      <div><div class="eyebrow">TECHHUB CATALOG</div><h2 class="h3 mb-0">Sản phẩm nổi bật</h2></div>
-      <span class="text-secondary small">Máy tính và linh kiện</span>
-    </div>
-    <div class="row g-3" id="products"><div class="col-12 text-secondary">Đang tải sản phẩm…</div></div>
+    <section class="mb-5" id="new-section"><div class="section-heading"><div><div class="eyebrow">FRESH ARRIVALS</div><h2 class="h3">Sản phẩm mới</h2></div><a href="/products?sort=newest">Xem catalog →</a></div><div class="row g-3" id="new-products"></div><nav class="pager mini-pager" id="new-pagination" aria-label="Trang sản phẩm mới"></nav></section>
+    <section class="mb-5" id="best-section"><div class="section-heading"><div><div class="eyebrow">COMMUNITY FAVORITES</div><h2 class="h3">Bán chạy</h2></div><a href="/products?sort=best_sellers">Xem catalog →</a></div><div class="row g-3" id="best-products"></div><nav class="pager mini-pager" id="best-pagination" aria-label="Trang bán chạy"></nav></section>
+    <section><div class="section-heading"><div><div class="eyebrow">BUILD YOUR SETUP</div><h2 class="h3">Khám phá danh mục</h2></div></div><div class="row g-3" id="categories"></div></section>
   </main>
   <footer class="container py-4 text-secondary small border-top border-secondary-subtle">© TechHub — Đồ án Web Programming with Node.js</footer>
   <script src="/assets/js/home.js" defer></script>

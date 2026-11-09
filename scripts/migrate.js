@@ -15,6 +15,8 @@ async function migrate() {
       ON password_reset_tokens(user_id, expires_at DESC);
     CREATE UNIQUE INDEX IF NOT EXISTS one_default_address_per_user
       ON addresses(user_id) WHERE is_default = TRUE;
+    CREATE INDEX IF NOT EXISTS reviews_product_recent_idx ON reviews(product_id,created_at DESC);
+    CREATE INDEX IF NOT EXISTS ratings_product_idx ON ratings(product_id,stars);
   `);
   console.log('Migration hoàn tất.');
   await db.end();

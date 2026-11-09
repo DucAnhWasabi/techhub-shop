@@ -7,6 +7,7 @@ const redis = require('./config/redis');
 const { createToken, csrfProtection } = require('./middleware/csrf');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const catalogRoutes = require('./routes/catalogRoutes');
 const { requireCustomer } = require('./middleware/auth');
 
 const app = express();
@@ -41,27 +42,13 @@ app.get('/api/auth/providers', (_req, res) => res.json({
 app.use('/api', csrfProtection);
 app.use('/api/auth', authRoutes);
 app.use('/api/me', profileRoutes);
+app.use('/api', catalogRoutes);
 app.get('/api/profile', requireCustomer, async (req, res, next) => {
   try {
     const users = require('./services/users');
     res.json({ data: await users.getProfile(req.user.id) });
   } catch (error) { next(error); }
 });
-app.get('/api/products', async (_req, res, next) => {
-  try {
-    const db = require('./config/db');
-    const { rows } = await db.query(
-      `SELECT p.id, p.name, p.slug, p.short_description, b.name AS brand,
-        c.name AS category, MIN(v.price_vnd) AS price_vnd,
-        COALESCE(SUM(v.stock_quantity), 0)::int AS stock_quantity
-       FROM products p JOIN brands b ON b.id=p.brand_id
-       JOIN categories c ON c.id=p.category_id LEFT JOIN variants v ON v.product_id=p.id
-       WHERE p.status='active' GROUP BY p.id,b.name,c.name ORDER BY p.name LIMIT 100`
-    );
-    res.json({ data: rows, page: 1, totalPages: 1 });
-  } catch (error) { next(error); }
-});
-
 app.use((error, _req, res, _next) => {
   console.error(error.message);
   const status = Number.isInteger(error.status) ? error.status : 500;

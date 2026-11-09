@@ -19,6 +19,14 @@ Compose build image và cài npm dependencies trong Dockerfile; PostgreSQL tự 
 - Migration idempotent tạo bảng token reset mật khẩu và index địa chỉ mặc định, nên vẫn áp dụng được trên volume DB từ giai đoạn trước.
 - Checkout chưa được dựng ở giai đoạn này. `src/services/users.js` cung cấp `ensureGuestCustomer(client, ...)` để luồng đặt hàng guest gọi bên trong transaction; tài khoản mới được gắn với email đơn hàng và lưu địa chỉ giao hàng mặc định. Checkout sẽ kết nối helper này ở giai đoạn tương ứng.
 
+## Catalog, sản phẩm và đánh giá
+
+- Trang chủ có sản phẩm mới, bán chạy (mỗi phần phân trang) và các danh mục; catalog ở `/products`, danh mục ở `/categories/:slug`, tìm kiếm ở `/search?q=...`.
+- Catalog API: `GET /api/products` nhận `page`, `limit`, `q`, `category`, `brand`, `minPrice`, `maxPrice`, `inStock`, `sort`. `sort`: `name_asc`, `name_desc`, `price_asc`, `price_desc`, `newest`, `best_sellers`. API danh sách luôn trả `totalPages` tối thiểu bằng 1.
+- API landing: `GET /api/products/new`, `GET /api/products/best-sellers`; metadata: `GET /api/categories`, `GET /api/brands`.
+- Chi tiết: `GET /api/products/:slug` trả ảnh, mô tả, biến thể, giá và tồn độc lập; bình luận: `GET/POST /api/products/:id/reviews`; rating: `POST /api/products/:id/ratings` (customer đăng nhập, không kiểm tra đã mua).
+- Socket.IO event trong room sản phẩm: `product:review:new`, `product:rating:updated`; Redis adapter chuyển tiếp event giữa hai backend.
+
 Tài khoản demo mặc định (đổi trong `.env` trước khi chạy):
 
 - Admin: `admin@techhub.local` / `Admin123!ChangeMe`

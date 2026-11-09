@@ -6,6 +6,10 @@ function validEmail(email) {
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function isUuid(value) {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
 function cleanText(value, maxLength) {
   return typeof value === 'string' ? value.trim().replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, maxLength) : '';
 }
@@ -20,4 +24,4 @@ function validateIdentity({ email, fullName, address }) {
   return { value: { email: normalizedEmail, fullName: name, address: shippingAddress } };
 }
 
-module.exports = { cleanText, normalizeEmail, validEmail, validateIdentity };
+module.exports = { cleanText, isUuid, normalizeEmail, validEmail, validateIdentity };

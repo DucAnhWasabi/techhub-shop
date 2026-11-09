@@ -117,3 +117,5 @@ CREATE INDEX IF NOT EXISTS products_brand_idx ON products(brand_id);
 CREATE INDEX IF NOT EXISTS variants_price_idx ON variants(price_vnd);
 CREATE INDEX IF NOT EXISTS orders_user_recent_idx ON orders(user_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS order_history_recent_idx ON order_status_history(order_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS reviews_product_recent_idx ON reviews(product_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS ratings_product_idx ON ratings(product_id,stars);
