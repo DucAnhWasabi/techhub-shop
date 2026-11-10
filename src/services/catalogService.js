@@ -145,4 +145,4 @@ async function getReviews(productId, query) {
   return { data: rows, page: currentPage, limit, total, totalPages };
 }
 
-module.exports = { getBrands, getCategories, getProduct, getReviews, listProducts };
+module.exports = { getBrands, getCategories, getProduct, getReviews, listProducts, parseInteger };

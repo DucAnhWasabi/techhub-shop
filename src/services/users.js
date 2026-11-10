@@ -37,7 +37,7 @@ async function registerWithPassword(input) {
 }
 
 // Gọi trong transaction checkout để liên kết đơn guest với customer theo email.
-async function ensureGuestCustomer(client, { email, fullName, address }) {
+async function ensureGuestCustomer(client, { email, fullName, address, addressDetails }) {
   const validated = validateIdentity({ email, fullName, address });
   if (validated.error) throw Object.assign(new Error(validated.error), { status: 400 });
   const inserted = await client.query(
@@ -46,17 +46,24 @@ async function ensureGuestCustomer(client, { email, fullName, address }) {
     [validated.value.email, validated.value.fullName]
   );
   if (inserted.rowCount) {
+    const details = addressDetails ? validateAddress(addressDetails) : {
+      recipientName: validated.value.fullName, phone: '', line1: validated.value.address,
+      line2: '', ward: '', district: '', province: 'Chưa cập nhật', postalCode: ''
+    };
     await client.query(
-      `INSERT INTO addresses(user_id,recipient_name,line1,province,is_default)
-       VALUES($1,$2,$3,'Chưa cập nhật',TRUE)`,
-      [inserted.rows[0].id, validated.value.fullName, validated.value.address]
+      `INSERT INTO addresses(user_id,recipient_name,phone,line1,line2,ward,district,province,postal_code,is_default)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE)`,
+      [inserted.rows[0].id,details.recipientName,details.phone,details.line1,details.line2,details.ward,details.district,details.province,details.postalCode]
     );
     return inserted.rows[0];
   }
   const existing = await client.query(
-    'SELECT id,email,full_name,role FROM users WHERE email=$1 FOR UPDATE', [validated.value.email]
+    'SELECT id,email,full_name,role,is_banned FROM users WHERE email=$1 FOR UPDATE', [validated.value.email]
   );
   if (!existing.rowCount) throw new Error('Không thể tạo hoặc tìm tài khoản khách.');
+  if (existing.rows[0].is_banned || existing.rows[0].role !== 'customer') {
+    throw Object.assign(new Error('Tài khoản này không thể đặt hàng.'), { status: 403 });
+  }
   return existing.rows[0];
 }
 

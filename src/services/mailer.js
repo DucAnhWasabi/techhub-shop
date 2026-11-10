@@ -32,8 +32,22 @@ async function sendPasswordReset(email, token) {
   });
 }
 
-async function sendOrderConfirmation() {
-  // Sẽ được dùng khi luồng checkout được triển khai ở giai đoạn sau.
+async function sendOrderConfirmation(order) {
+  const transport = createTransport();
+  if (!transport) {
+    if (process.env.NODE_ENV !== 'production') console.info(`Đơn ${order.order_number} đã tạo cho ${order.email}; SMTP chưa cấu hình nên chưa gửi email.`);
+    return false;
+  }
+  const lines = order.items.map((item) => `${item.product_name} — ${item.variant_name} × ${item.quantity}: ${Number(item.line_total_vnd).toLocaleString('en-US')}đ`);
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+  await transport.sendMail({
+    from: process.env.SMTP_FROM || 'TechHub <no-reply@techhub.local>',
+    to: order.email,
+    subject: `TechHub xác nhận đơn hàng ${order.order_number}`,
+    text: `Cảm ơn bạn đã đặt hàng.\nMã đơn: ${order.order_number}\n${lines.join('\n')}\nTổng thanh toán COD: ${Number(order.total_vnd).toLocaleString('en-US')}đ`,
+    html: `<h2>TechHub đã nhận đơn hàng</h2><p>Mã đơn: <strong>${escapeHtml(order.order_number)}</strong></p><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul><p>Tổng thanh toán COD: <strong>${Number(order.total_vnd).toLocaleString('en-US')}đ</strong></p>`
+  });
+  return true;
 }
 
 module.exports = { sendOrderConfirmation, sendPasswordReset };

@@ -25,6 +25,7 @@ function productMarkup(item) {
       <h1 class="display-6 fw-bold mt-2">${escapeHtml(item.name)}</h1><div class="product-rating mb-3"><strong>${Number(item.average_rating).toFixed(1)} ★</strong> <span>(${Number(item.rating_count)} đánh giá)</span></div>
       <p class="lead text-secondary">${escapeHtml(item.short_description)}</p><div class="detail-price" id="variant-price"></div>
       <h2 class="h6 mt-4">Chọn biến thể</h2><div class="d-grid gap-2" id="variants">${variants || '<div class="text-secondary">Chưa có biến thể đang bán.</div>'}</div>
+      <div class="d-flex gap-2 mt-3"><input id="add-quantity" class="form-control quantity-input" type="number" min="1" max="99" value="1" aria-label="Số lượng"><button id="add-to-cart" class="btn btn-info fw-semibold flex-fill" type="button" ${item.variants.length ? '' : 'disabled'}>Thêm vào giỏ</button></div>
       <div class="detail-description mt-4"><h2 class="h5">Mô tả sản phẩm</h2><div>${escapeHtml(item.description)}</div></div>
       <a class="btn btn-outline-info mt-4" href="/categories/${encodeURIComponent(item.category_slug)}">Xem thêm ${escapeHtml(item.category)}</a>
     </div>`;
@@ -102,6 +103,8 @@ async function start() {
   document.querySelector('#rating-summary').textContent = `${Number(product.average_rating).toFixed(1)} ★ · ${Number(product.rating_count)} đánh giá`;
   document.querySelector('#stars').value = product.my_rating || '5';
   await loadReviews();
+  const cartSummary = await fetch('/api/cart').then((result) => result.json());
+  document.querySelector('#cart-count').textContent = cartSummary.data.items.reduce((sum, item) => sum + item.quantity, 0);
   const profileResponse = await fetch('/api/me');
   if (profileResponse.ok) {
     const profile = (await profileResponse.json()).data;
@@ -121,6 +124,29 @@ async function start() {
     document.querySelector('#rating-summary').textContent = `${Number(rating.average_rating).toFixed(1)} ★ · ${Number(rating.rating_count)} đánh giá`;
   });
 }
+
+document.querySelector('#product-detail').addEventListener('click', async (event) => {
+  if (event.target.id !== 'add-to-cart') return;
+  const variant = document.querySelector('input[name="variant"]:checked');
+  const noticeBox = document.querySelector('#cart-notice');
+  if (!variant) return;
+  try {
+    const token = await getCsrf();
+    const response = await fetch('/api/cart/items', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+      body: JSON.stringify({ variantId: variant.value, quantity: Number(document.querySelector('#add-quantity').value) })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Không thể thêm sản phẩm vào giỏ.');
+    document.querySelector('#cart-count').textContent = result.data.items.reduce((sum, item) => sum + item.quantity, 0);
+    noticeBox.textContent = 'Đã thêm sản phẩm vào giỏ hàng.';
+    noticeBox.className = 'alert alert-success mt-3';
+  } catch (error) {
+    noticeBox.textContent = error.message;
+    noticeBox.className = 'alert alert-danger mt-3';
+  }
+});
 
 document.querySelector('#review-form').addEventListener('submit', async (event) => {
   event.preventDefault();

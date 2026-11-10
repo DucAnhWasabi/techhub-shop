@@ -17,6 +17,7 @@ async function migrate() {
       ON addresses(user_id) WHERE is_default = TRUE;
     CREATE INDEX IF NOT EXISTS reviews_product_recent_idx ON reviews(product_id,created_at DESC);
     CREATE INDEX IF NOT EXISTS ratings_product_idx ON ratings(product_id,stars);
+    CREATE UNIQUE INDEX IF NOT EXISTS one_cart_per_user ON carts(user_id) WHERE user_id IS NOT NULL;
   `);
   console.log('Migration hoàn tất.');
   await db.end();

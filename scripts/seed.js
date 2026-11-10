@@ -51,6 +51,11 @@ async function seed() {
        ON CONFLICT(email) DO UPDATE SET password_hash=EXCLUDED.password_hash, role='admin', updated_at=NOW()`,
       [adminEmail, adminHash]
     );
+    await client.query(
+      `INSERT INTO discounts(code,discount_type,value,max_uses,created_by_admin_id)
+       SELECT 'TECH5','percent',5,10,id FROM users WHERE email=$1
+       ON CONFLICT(code) DO NOTHING`, [adminEmail]
+    );
     const customers = [
       ['minh.nguyen@example.com', 'Nguyễn Minh Anh'],
       ['linh.tran@example.com', 'Trần Gia Linh'],

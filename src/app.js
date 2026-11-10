@@ -1,5 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const RedisStore = require('connect-redis').default;
 const passport = require('./config/passport');
@@ -8,6 +9,9 @@ const { createToken, csrfProtection } = require('./middleware/csrf');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const catalogRoutes = require('./routes/catalogRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const checkoutRoutes = require('./routes/checkoutRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const { requireCustomer } = require('./middleware/auth');
 
 const app = express();
@@ -16,6 +20,7 @@ app.set('trust proxy', 1);
 app.use(helmet());
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+app.use(cookieParser());
 app.use(session({
   name: 'techhub.sid',
   store: new RedisStore({ client: redis, prefix: 'techhub:sess:' }),
@@ -43,6 +48,9 @@ app.use('/api', csrfProtection);
 app.use('/api/auth', authRoutes);
 app.use('/api/me', profileRoutes);
 app.use('/api', catalogRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/checkout', checkoutRoutes);
+app.use('/api/me/orders', orderRoutes);
 app.get('/api/profile', requireCustomer, async (req, res, next) => {
   try {
     const users = require('./services/users');
