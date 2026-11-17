@@ -1,6 +1,6 @@
 # TechHub Shop - ERD
 
-Sơ đồ dưới đây mô tả database hiện tại trong `db/schema.sql`. Các bảng `carts`, `orders`, `discounts` và `loyalty_points` đã có trong schema để chuẩn bị cho các chức năng tương ứng; việc có bảng chưa đồng nghĩa nghiệp vụ đã được triển khai trong Node.js.
+Sơ đồ dưới đây mô tả database hiện tại trong `db/schema.sql`. Các luồng cart, checkout COD, tạo order, discount redemption, loyalty và order history đã có service/API trong source. Schema vẫn là mô hình dữ liệu; xem `bonus/11-cart.md` và `bonus/12-checkout-order.md` để theo dõi trình tự xử lý. Payment gateway và admin management chưa được triển khai.
 
 ```mermaid
 erDiagram
@@ -305,3 +305,11 @@ Bảng dưới đây là phần ERD dạng bảng, dùng để tra cứu nhanh c
 - Rating phải nằm trong khoảng 1 đến 5 sao.
 - Cart phải là cart của user hoặc guest token, không được đồng thời có cả hai.
 - Product status hiện chỉ nhận `active` hoặc `hidden`.
+
+## Ghi chú theo luồng hiện tại
+
+- Guest cart được nhận diện bằng cookie `techhub.cart`; database chỉ lưu SHA-256 hash trong `carts.guest_token_hash`. Khi user đăng nhập, cart guest được gộp vào cart customer và số lượng được giới hạn theo tồn kho.
+- Guest checkout tạo/liên kết một customer theo email để đáp ứng `orders.user_id NOT NULL`; đơn guest sau đó có thể được xem khi customer truy cập bằng tài khoản email đó.
+- Checkout tạo đơn COD, snapshot địa chỉ và từng dòng hàng, giảm tồn kho, cập nhật coupon/loyalty, ghi lịch sử trạng thái ban đầu và xóa cart trong cùng transaction.
+- Email xác nhận được gửi sau khi transaction commit; lỗi gửi email không rollback đơn. Thanh toán hiện là COD, chưa tích hợp cổng thanh toán.
+- Order history/detail hiện dành cho customer đã đăng nhập; trạng thái mới được ghi khi tạo đơn, chưa có API quản trị cập nhật trạng thái.

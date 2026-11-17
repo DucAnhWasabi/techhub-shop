@@ -16,11 +16,13 @@ Thư mục này chứa các sequence diagram cho những luồng đã có trong 
 | `08-profile-address.md` | Hồ sơ và nhiều địa chỉ giao hàng | Hoàn thiện |
 | `09-change-password.md` | Đổi mật khẩu | Hoàn thiện |
 | `10-password-recovery.md` | Khôi phục mật khẩu | Hoàn thiện khi cấu hình SMTP hoặc xem log local |
+| `11-cart.md` | Cart khách và customer, gộp cart sau đăng nhập | Đã có API/UI; cần xác nhận end-to-end |
+| `12-checkout-order.md` | Quote, địa chỉ, coupon, loyalty, tạo đơn COD, email và lịch sử đơn | Đã có API/UI; email cần SMTP |
 
 ## Ghi chú
 
 - Các diagram phản ánh flow hiện có, không đại diện cho các bảng database chưa có nghiệp vụ.
-- Cart, checkout, payment, order, loyalty và admin chưa được đưa vào đây vì chưa có flow hoàn chỉnh trong source.
+- Sequence 11–12 ghi lại cart và checkout/order hiện có. Payment gateway và admin chưa có trong source.
 - Có thể mở từng file bằng Markdown preview trong VS Code để xem hình sequence diagram.
 
 ## Chú giải ký hiệu

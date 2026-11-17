@@ -122,6 +122,10 @@ SESSION_SECRET=thay-bang-chuoi-ngau-nhien-dai
 | /forgot-password           | Yêu cầu khôi phục mật khẩu                                   |
 | /reset-password?token=...  | Đặt mật khẩu mới                                             |
 | /account                  |  Hồ sơ, mật khẩu và địa chỉ giao hàng                         |
+| /cart                     | Cart guest/customer                                          |
+| /checkout                 | Checkout COD, coupon, loyalty và địa chỉ                     |
+| /orders                   | Lịch sử đơn của customer đăng nhập                           |
+| /orders/:id               | Chi tiết đơn và lịch sử trạng thái                           |
 +----------------------------+--------------------------------------------------------------+
 
 ### API catalog và review
@@ -144,6 +148,22 @@ Catalog hỗ trợ các query chính: `page`, `limit`, `q`, `category`, `brand`,
 
 Các giá trị `sort`: `name_asc`, `name_desc`, `price_asc`, `price_desc`, `newest`, `best_sellers`.
 
+### API cart, checkout và order
+
+| Method | Endpoint | Mục đích |
+|---|---|---|
+| GET | `/api/cart` | Đọc cart guest/customer |
+| POST | `/api/cart/items` | Thêm variant vào cart |
+| PATCH | `/api/cart/items/:id` | Đổi số lượng; quantity 0 sẽ xóa |
+| DELETE | `/api/cart/items/:id` | Xóa một dòng cart |
+| DELETE | `/api/cart` | Xóa toàn bộ cart |
+| POST | `/api/checkout/quote` | Tính quote, coupon và loyalty |
+| POST | `/api/checkout/place-order` | Tạo đơn COD và xử lý tồn kho trong transaction |
+| GET | `/api/me/orders` | Lịch sử đơn của customer đăng nhập |
+| GET | `/api/me/orders/:id` | Chi tiết đơn và status history theo owner |
+
+Các luồng chi tiết nằm ở `bonus/11-cart.md` và `bonus/12-checkout-order.md`.
+
 ## 6. Hướng dẫn kiểm tra chức năng hiện có
 
 - [x] Mở landing page và xem nhóm sản phẩm mới.
@@ -163,14 +183,14 @@ Các giá trị `sort`: `name_asc`, `name_desc`, `price_asc`, `price_desc`, `new
 - [x] Đổi mật khẩu.
 - [x] Yêu cầu khôi phục mật khẩu.
 - [x] Kiểm tra CSRF, session Redis và rate limit.
-- [ ] Thêm sản phẩm vào cart.
-- [ ] Cập nhật hoặc xóa cart item.
-- [ ] Guest checkout.
-- [ ] Payment và tạo order.
-- [ ] Order history và order tracking.
-- [ ] Email xác nhận order.
-- [ ] Discount code khi checkout.
-- [ ] Loyalty point.
+- [x] Thêm sản phẩm vào cart guest/customer; gộp cart khi đăng nhập (đã có code, cần kiểm tra end-to-end).
+- [x] Cập nhật, xóa item và xóa toàn bộ cart (đã có code, cần kiểm tra end-to-end).
+- [x] Guest checkout; đơn guest được liên kết customer theo email.
+- [x] Tạo order COD, snapshot mặt hàng/địa chỉ và trừ inventory bằng transaction.
+- [x] Order history/detail và lịch sử trạng thái ban đầu; chưa có công cụ cập nhật trạng thái.
+- [x] Gửi email xác nhận sau commit; cần SMTP để gửi thật.
+- [x] Áp dụng discount code với giới hạn lượt sử dụng.
+- [x] Loyalty: dùng điểm và ghi điểm earned/redeemed khi tạo order.
 - [ ] Admin dashboard.
 - [ ] Admin product/user/order management.
 - [ ] Admin discount management.
@@ -184,18 +204,18 @@ Các giá trị `sort`: `name_asc`, `name_desc`, `price_asc`, `price_desc`, `new
 | Profile và change password     | 100%    | Đã có API và giao diện                        |
 | Password recovery              | 90%     | Cần SMTP hoặc xem token trong log local       |
 | Multiple delivery addresses    | 100%    | Thêm, sửa, xóa, đặt default                   |
-| Purchase history/details       | 0%      | Chưa có order flow                            |
+| Purchase history/details       | 80%     | Có order list/detail và status history; chưa có cập nhật trạng thái quản trị |
 | Landing page                   | 100%    | New, best sellers và nhiều danh mục           |
 | Product catalog                | 100%    | Pagination, filter, search, sort              |
 | Product detail/variants        | 100%    | 40 sản phẩm, 2 variants, 3 ảnh mỗi sản phẩm   |
-| Cart                           | 0%      | Chưa có route và UI                           |
-| Checkout/payment               | 0%      | Chưa triển khai                               |
-| Discount                       | 0%      | Có schema, chưa có nghiệp vụ                  |
-| Email sau order                | 0%      | Hàm confirmation chưa có logic                |
+| Cart                           | 90%     | Guest/customer cart, merge và UI; cần E2E     |
+| Checkout/payment               | 75%     | Quote + COD order có transaction; chưa có payment gateway |
+| Discount                       | 75%     | Coupon checkout và giới hạn lượt; chưa có admin management |
+| Email sau order                | 70%     | Gửi confirmation sau commit; phụ thuộc SMTP   |
 | Comment/rating                 | 80%     | Có API/Socket.IO, cần kiểm tra realtime       |
-| Loyalty                        | 0%      | Có schema, chưa có tính điểm                  |
+| Loyalty                        | 70%     | Redeem/earn trong order; chưa có trang lịch sử hoặc admin adjustment |
 | Admin                          | 0%      | Có account, chưa có admin module              |
-| UI/UX/responsive               | 70%     | Bootstrap và responsive cơ bản                |
+| UI/UX/responsive               | 75%     | Đã có cart, checkout và order pages; cần rà soát responsive toàn site |
 | Docker deployment              | 80%     | Chạy local sau build                          |
 | Horizontal scaling             | 40%     | Có Redis/Nginx, chưa chứng minh replicas      |
 +--------------------------------+---------+-----------------------------------------------+
@@ -217,16 +237,17 @@ flowchart TD
     K --> L[Socket.IO realtime]
     H --> M[Password recovery]
     M --> N[SMTP email]
-    F -. missing .-> O[Cart]
-    O -. missing .-> P[Checkout and payment]
-    P -. missing .-> Q[Orders and tracking]
-    Q -. missing .-> R[Order email]
-    Q -. missing .-> S[Loyalty points]
-    Q -. missing .-> T[Admin dashboard]
-    T -. missing .-> U[Admin product user order discount]
+    F --> O[Cart guest/customer]
+    O --> P[Checkout quote and COD]
+    P --> Q[Order transaction and inventory]
+    Q --> R[Order confirmation email]
+    Q --> S[Loyalty earn/redeem]
+    Q --> V[Customer order history/detail]
+    Q -. not implemented .-> T[Admin dashboard]
+    T -. not implemented .-> U[Admin product user order discount]
 ```
 
-Luồng nét liền là phần đang có trong source. Luồng nét đứt là phần cần triển khai để đạt đầy đủ rubric.
+Luồng nét liền đã có triển khai trong source; cấu hình SMTP và kiểm tra end-to-end vẫn cần thực hiện. Luồng nét đứt chưa được triển khai.
 
 ## 8. Cấu hình OAuth và email
 
@@ -358,29 +379,28 @@ Dockerfile               Node.js image
 ## 11. Ghi chú trung thực khi đánh giá
 
 - Project hiện chỉ bán máy tính và linh kiện máy tính; seed không có điện thoại hoặc sản phẩm ngoài phạm vi đề.
-- Schema đã chuẩn bị nhiều bảng cho cart, order, discount và loyalty, nhưng schema một mình chưa tạo thành chức năng hoàn chỉnh.
+- Cart, checkout COD, order, discount redemption, loyalty ledger và customer order history đã có route/service/UI; xem sequence tại `bonus/11-cart.md` và `bonus/12-checkout-order.md`.
 - Tài khoản admin đã được seed nhưng chưa có giao diện hoặc API admin tương ứng.
 - Chưa có public URL.
-- Chưa có payment gateway.
 - Chưa có video demo, thư mục ảnh GitHub Insights hoặc file tự đánh giá rubric trong repository này; các nội dung này cần chuẩn bị riêng khi nộp bài.
-- Không khai báo bonus feature nào là đã hoàn thành. CI/CD, microservices, AI chatbot/image search/sentiment analysis và Elasticsearch hiện chưa được triển khai.
+- Chưa có payment gateway, admin dashboard/management, CI/CD, microservices, AI chatbot/image search/sentiment analysis hoặc Elasticsearch.
 
 ## 12. Thứ tự triển khai tiếp theo
 
 ```text
-[1] Cart và guest cart
+[1] Kiểm tra end-to-end cart, guest cart và gộp cart khi đăng nhập
 	|
 	v
-[2] Checkout + địa chỉ + discount + loyalty
+[2] Kiểm tra end-to-end checkout, coupon, loyalty và guest order
 	|
 	v
-[3] Transaction tạo order + trừ inventory
+[3] Kiểm tra transaction tạo order, trừ inventory và trường hợp lỗi/rollback
 	|
 	v
-[4] Email xác nhận + order history + tracking
+[4] Cấu hình SMTP; hoàn thiện cập nhật trạng thái và tracking order
 	|
 	v
-[5] Admin order/product/user/discount
+[5] Payment gateway và admin order/product/user/discount
 	|
 	v
 [6] Simple dashboard + advanced dashboard
