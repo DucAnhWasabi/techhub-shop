@@ -10,14 +10,14 @@ Website thương mại điện tử bán **máy tính và linh kiện máy tính
 | Hạng mục         | Thông tin                                                    |
 +------------------+--------------------------------------------------------------+
 | Backend          | Node.js, Express.js                                          |
-| Frontend         | EJS, JavaScript thuần, Bootstrap 5                          |
+| Frontend         | EJS, JavaScript thuần, Bootstrap 5                           |
 | Database         | PostgreSQL                                                   |
 | Session/cache    | Redis                                                        |
 | Realtime         | Socket.IO và Redis adapter                                   |
 | Reverse proxy    | Nginx                                                        |
 | Đóng gói         | Docker Compose                                               |
-| Cổng truy cập    | http://localhost:8080                                       |
-| API health check | http://localhost:8080/api/health                            |
+| Cổng truy cập    | http://localhost:8080                                        |
+| API health check | http://localhost:8080/api/health                             |
 | Public URL       | Chưa triển khai public; chỉ có môi trường Docker local       |
 +------------------+--------------------------------------------------------------+
 
