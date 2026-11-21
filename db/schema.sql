@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS product_images (
 CREATE TABLE IF NOT EXISTS variants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   sku TEXT NOT NULL UNIQUE, name TEXT NOT NULL, attributes JSONB NOT NULL DEFAULT '{}',
-  price_vnd BIGINT NOT NULL CHECK (price_vnd >= 0), stock_quantity INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
+  price_vnd BIGINT NOT NULL CHECK (price_vnd >= 0), cost_vnd BIGINT NOT NULL DEFAULT 0 CHECK (cost_vnd >= 0), stock_quantity INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
   is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS reviews (
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   variant_id UUID REFERENCES variants(id) ON DELETE SET NULL, sku_snapshot TEXT NOT NULL,
-  product_name_snapshot TEXT NOT NULL, variant_name_snapshot TEXT NOT NULL, unit_price_vnd BIGINT NOT NULL,
+  product_name_snapshot TEXT NOT NULL, variant_name_snapshot TEXT NOT NULL, unit_price_vnd BIGINT NOT NULL, unit_cost_vnd BIGINT NOT NULL DEFAULT 0,
   quantity INTEGER NOT NULL CHECK (quantity > 0), line_total_vnd BIGINT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS order_status_history (

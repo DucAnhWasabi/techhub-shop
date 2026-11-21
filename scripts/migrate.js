@@ -18,6 +18,8 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS reviews_product_recent_idx ON reviews(product_id,created_at DESC);
     CREATE INDEX IF NOT EXISTS ratings_product_idx ON ratings(product_id,stars);
     CREATE UNIQUE INDEX IF NOT EXISTS one_cart_per_user ON carts(user_id) WHERE user_id IS NOT NULL;
+    ALTER TABLE variants ADD COLUMN IF NOT EXISTS cost_vnd BIGINT NOT NULL DEFAULT 0 CHECK (cost_vnd >= 0);
+    ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_cost_vnd BIGINT NOT NULL DEFAULT 0 CHECK (unit_cost_vnd >= 0);
   `);
   console.log('Migration hoàn tất.');
   await db.end();

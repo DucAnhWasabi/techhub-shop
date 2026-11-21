@@ -5,4 +5,10 @@ function requireCustomer(req, res, next) {
   next();
 }
 
-module.exports = { requireCustomer };
+function requireAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Vui lòng đăng nhập bằng tài khoản admin.' });
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Chức năng này chỉ dành cho admin.' });
+  next();
+}
+
+module.exports = { requireAdmin, requireCustomer };

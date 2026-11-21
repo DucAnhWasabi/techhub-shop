@@ -33,8 +33,8 @@ form?.addEventListener('submit', async (event) => {
       });
       window.location.assign('/account');
     } else if (page === 'login') {
-      await api('/api/auth/login', 'POST', { email: value('email'), password: value('password') });
-      window.location.assign('/account');
+      const result = await api('/api/auth/login', 'POST', { email: value('email'), password: value('password') });
+      window.location.assign(result.data.role === 'admin' ? '/admin' : '/account');
     } else if (page === 'forgot') {
       const result = await api('/api/auth/forgot-password', 'POST', { email: value('email') });
       show(result.message);

@@ -16,8 +16,8 @@ function normalizeCouponCode(code) {
 async function readItems(client, cartId, lock = false) {
   const lockClause = lock ? 'FOR UPDATE OF ci,v' : '';
   const { rows } = await client.query(
-    `SELECT ci.id AS cart_item_id,ci.quantity,v.id AS variant_id,v.sku,v.name AS variant_name,
-       v.price_vnd,v.stock_quantity,p.id AS product_id,p.name AS product_name
+      `SELECT ci.id AS cart_item_id,ci.quantity,v.id AS variant_id,v.sku,v.name AS variant_name,
+       v.price_vnd,v.cost_vnd,v.stock_quantity,p.id AS product_id,p.name AS product_name
      FROM cart_items ci JOIN variants v ON v.id=ci.variant_id JOIN products p ON p.id=v.product_id
      WHERE ci.cart_id=$1 AND v.is_active=TRUE AND p.status='active' ORDER BY ci.created_at ${lockClause}`,
     [cartId]
@@ -182,9 +182,9 @@ async function placeOrder(req, res, input = {}) {
       );
       if (!stock.rowCount) throw Object.assign(new Error(`${item.product_name} vừa hết hàng. Hãy cập nhật giỏ hàng.`), { status: 409 });
       await client.query(
-        `INSERT INTO order_items(order_id,variant_id,sku_snapshot,product_name_snapshot,variant_name_snapshot,unit_price_vnd,quantity,line_total_vnd)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [order.id,item.variant_id,item.sku,item.product_name,item.variant_name,item.unit_price_vnd,item.quantity,item.line_total_vnd]
+          `INSERT INTO order_items(order_id,variant_id,sku_snapshot,product_name_snapshot,variant_name_snapshot,unit_price_vnd,unit_cost_vnd,quantity,line_total_vnd)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [order.id,item.variant_id,item.sku,item.product_name,item.variant_name,item.unit_price_vnd,item.cost_vnd,item.quantity,item.line_total_vnd]
       );
     }
     await client.query(

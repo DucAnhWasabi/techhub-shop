@@ -104,11 +104,14 @@ async function seed() {
       ];
       for (const [sku, variantName, attributes, variantPrice, stock] of variants) {
         await client.query(
-          `INSERT INTO variants(product_id,sku,name,attributes,price_vnd,stock_quantity)
-           VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(sku) DO UPDATE SET product_id=EXCLUDED.product_id,
-           name=EXCLUDED.name,attributes=EXCLUDED.attributes,price_vnd=EXCLUDED.price_vnd,stock_quantity=EXCLUDED.stock_quantity,updated_at=NOW()`,
-          [productId, sku, variantName, JSON.stringify(attributes), variantPrice, stock]
+          `INSERT INTO variants(product_id,sku,name,attributes,price_vnd,cost_vnd,stock_quantity)
+           VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(sku) DO UPDATE SET product_id=EXCLUDED.product_id,
+           name=EXCLUDED.name,attributes=EXCLUDED.attributes,price_vnd=EXCLUDED.price_vnd,cost_vnd=EXCLUDED.cost_vnd,
+           stock_quantity=EXCLUDED.stock_quantity,updated_at=NOW()`,
+          [productId, sku, variantName, JSON.stringify(attributes), variantPrice, Math.round(variantPrice * 0.8), stock]
         );
+        await client.query(`UPDATE order_items oi SET unit_cost_vnd=v.cost_vnd FROM variants v
+          WHERE oi.variant_id=v.id AND v.sku=$1 AND oi.unit_cost_vnd=0`, [sku]);
       }
     }
     await client.query('COMMIT');

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản trị — TechHub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/assets/css/site.css" rel="stylesheet">
+</head><body>
+  <nav class="navbar navbar-dark border-bottom border-secondary-subtle"><div class="container py-2"><a class="navbar-brand fw-bold" href="/">TECHHUB<span>.</span></a><div class="d-flex gap-2"><a href="/" class="btn btn-outline-light btn-sm">Cửa hàng</a><button id="admin-logout" class="btn btn-outline-light btn-sm">Đăng xuất</button></div></div></nav>
+  <main class="container-fluid container-xl py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4"><div><div class="eyebrow">TECHHUB ADMIN</div><h1 class="h2 mb-0">Quản trị cửa hàng</h1></div><div id="admin-identity" class="text-secondary"></div></div>
+    <div id="admin-notice" class="alert d-none" role="alert"></div>
+    <ul class="nav nav-pills admin-tabs mb-4" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-tab="dashboard">Dashboard</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="products">Sản phẩm</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="users">Người dùng</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="orders">Đơn hàng</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="discounts">Mã giảm giá</button></li>
+    </ul>
+
+    <section class="admin-panel" id="panel-dashboard">
+      <h2 class="h4 mb-3">Tổng quan</h2><div class="row g-3 mb-4" id="summary-cards"></div>
+      <div class="row g-3 mb-4"><div class="col-lg-6"><article class="admin-card"><h3 class="h6">Sản phẩm bán chạy</h3><canvas id="best-chart" height="210"></canvas></article></div>
+        <div class="col-lg-6"><article class="admin-card"><div class="d-flex flex-wrap justify-content-between gap-2"><h3 class="h6">Báo cáo nâng cao</h3><div class="d-flex gap-2"><select class="form-select form-select-sm" id="analytics-period"><option value="year">Năm</option><option value="quarter">Quý</option><option value="month">Tháng</option><option value="week">Tuần</option><option value="range">Khoảng ngày</option></select><input class="form-control form-control-sm analytics-year" id="analytics-year" type="number" min="2000" max="2200" aria-label="Năm"><select class="form-select form-select-sm d-none" id="analytics-subperiod"></select></div></div>
+          <div class="row g-2 my-2" id="analytics-cards"></div><div class="row g-2 d-none mb-2" id="analytics-dates"><div class="col"><input class="form-control form-control-sm" id="analytics-from" type="date" aria-label="Từ ngày"></div><div class="col"><input class="form-control form-control-sm" id="analytics-to" type="date" aria-label="Đến ngày"></div><div class="col-auto"><button id="analytics-apply" class="btn btn-info btn-sm">Xem</button></div></div>
+          <canvas id="analytics-chart" height="210"></canvas><div class="small text-secondary mt-2" id="analytics-compare"></div>
+        </article></div></div>
+    </section>
+
+    <section class="admin-panel d-none" id="panel-products">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h2 class="h4 mb-0">Quản lý sản phẩm</h2><form id="product-search" class="d-flex gap-2"><input class="form-control" name="q" placeholder="Tìm tên sản phẩm"><button class="btn btn-outline-info">Tìm</button><button type="button" id="product-new" class="btn btn-info text-nowrap">Thêm sản phẩm</button></form></div>
+      <form id="product-form" class="admin-card mb-4 d-none"><input type="hidden" name="id"><div class="d-flex justify-content-between"><h3 class="h5" id="product-form-title">Thêm sản phẩm</h3><button type="button" id="product-cancel" class="btn-close btn-close-white" aria-label="Đóng"></button></div>
+        <div class="row g-3"><div class="col-md-6"><label class="form-label">Tên</label><input class="form-control" name="name" required minlength="2" maxlength="160"></div><div class="col-md-3"><label class="form-label">Thương hiệu</label><select class="form-select" name="brandId" required></select></div><div class="col-md-3"><label class="form-label">Danh mục</label><select class="form-select" name="categoryId" required></select></div>
+        <div class="col-md-8"><label class="form-label">Mô tả ngắn</label><input class="form-control" name="shortDescription" required maxlength="400"></div><div class="col-md-4"><label class="form-label">Hiển thị</label><select class="form-select" name="status"><option value="active">Đang bán</option><option value="hidden">Ẩn</option></select></div>
+        <div class="col-12"><label class="form-label">Mô tả chi tiết</label><textarea class="form-control" name="description" rows="4" required minlength="20" maxlength="5000"></textarea></div>
+        <div class="col-lg-8"><div class="d-flex justify-content-between align-items-center gap-2 mb-2"><label class="form-label mb-0">Biến thể sản phẩm (ít nhất 2)</label><button type="button" id="variant-add" class="btn btn-sm btn-outline-info">+ Thêm biến thể</button></div><div id="variant-rows" class="d-grid gap-2"></div><div class="form-text">Mỗi biến thể có SKU, tên, giá bán, giá vốn và tồn kho riêng.</div></div>
+        <div class="col-lg-4"><label class="form-label">URL ảnh (mỗi dòng một URL, ít nhất 3)</label><textarea class="form-control" name="images" rows="8" required placeholder="https://..."></textarea></div><div class="col-12"><button class="btn btn-info fw-semibold">Lưu sản phẩm</button></div></div>
+      </form>
+      <div class="table-responsive admin-card p-0"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Sản phẩm</th><th>Danh mục / hãng</th><th>Giá bán / giá vốn / tồn kho</th><th>Trạng thái</th><th></th></tr></thead><tbody id="products-table"></tbody></table></div><nav id="products-pagination" class="pager mt-3"></nav>
+    </section>
+
+    <section class="admin-panel d-none" id="panel-users"><div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h2 class="h4 mb-0">Quản lý customer</h2><form id="user-search" class="d-flex gap-2"><input class="form-control" name="q" placeholder="Email hoặc họ tên"><button class="btn btn-outline-info">Tìm</button></form></div>
+      <div class="table-responsive admin-card p-0"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Họ tên</th><th>Email</th><th>Điểm</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr></thead><tbody id="users-table"></tbody></table></div><nav id="users-pagination" class="pager mt-3"></nav>
+      <form id="user-form" class="admin-card mt-3 d-none"><input type="hidden" name="id"><h3 class="h5">Chỉnh sửa customer</h3><div class="row g-3"><div class="col-md-4"><label class="form-label">Họ tên</label><input class="form-control" name="fullName" required minlength="2" maxlength="100"></div><div class="col-md-5"><label class="form-label">Email</label><input class="form-control" name="email" type="email" required></div><div class="col-md-3 d-flex align-items-end"><label class="form-check"><input class="form-check-input" name="isBanned" type="checkbox"><span class="form-check-label">Khóa tài khoản</span></label></div><div class="col-12"><button class="btn btn-info">Lưu</button><button type="button" id="user-cancel" class="btn btn-outline-light ms-2">Hủy</button></div></div></form>
+    </section>
+
+    <section class="admin-panel d-none" id="panel-orders"><div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h2 class="h4 mb-0">Quản lý đơn hàng</h2><div class="d-flex flex-wrap gap-2"><select class="form-select" id="order-range"><option value="">Tất cả thời gian</option><option value="today">Hôm nay</option><option value="yesterday">Hôm qua</option><option value="week">Tuần này</option><option value="month">Tháng này</option><option value="custom">Khoảng ngày</option></select><input type="date" class="form-control d-none" id="order-from"><input type="date" class="form-control d-none" id="order-to"><button id="order-filter" class="btn btn-outline-info">Lọc</button></div></div>
+      <div class="table-responsive admin-card p-0"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Đơn hàng</th><th>Khách hàng</th><th>Ngày tạo</th><th>Tổng</th><th>Trạng thái</th><th></th></tr></thead><tbody id="orders-table"></tbody></table></div><nav id="orders-pagination" class="pager mt-3"></nav>
+      <article id="order-detail-panel" class="admin-card mt-3 d-none"></article>
+    </section>
+
+    <section class="admin-panel d-none" id="panel-discounts"><div class="row g-3"><div class="col-lg-4"><form id="discount-form" class="admin-card"><h2 class="h5">Tạo mã giảm giá</h2><label class="form-label" for="discount-code">Mã 5 ký tự chữ-số</label><input id="discount-code" class="form-control mb-3 text-uppercase" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}"><label class="form-label" for="discount-type">Kiểu giảm</label><select id="discount-type" class="form-select mb-3"><option value="percent">Phần trăm</option><option value="fixed">Số tiền (đ)</option></select><label class="form-label" for="discount-value">Giá trị giảm</label><input id="discount-value" class="form-control mb-3" type="number" min="1" required><label class="form-label" for="discount-max">Lượt dùng tối đa (1–10)</label><input id="discount-max" class="form-control mb-3" type="number" min="1" max="10" value="10" required><button class="btn btn-info">Tạo mã</button></form></div><div class="col-lg-8"><div class="table-responsive admin-card p-0"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Mã / ngày tạo</th><th>Mức giảm</th><th>Đã dùng</th><th>Đơn áp dụng</th></tr></thead><tbody id="discounts-table"></tbody></table></div></div></div></section>
+  </main>
+  <div class="modal fade" id="order-modal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content bg-dark text-light"><div class="modal-header"><h2 class="modal-title h5">Chi tiết đơn hàng</h2><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="order-modal-body"></div></div></div></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/assets/js/admin.js" defer></script>
+</body></html>

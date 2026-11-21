@@ -21,6 +21,7 @@ app.get('/register', (_req, res) => res.render('auth', { mode: 'register', title
 app.get('/forgot-password', (_req, res) => res.render('auth', { mode: 'forgot', title: 'Khôi phục mật khẩu' }));
 app.get('/reset-password', (_req, res) => res.render('auth', { mode: 'reset', title: 'Đặt mật khẩu mới' }));
 app.get('/account', (_req, res) => res.render('account'));
+app.get('/admin', (_req, res) => res.render('admin'));
 app.listen(Number(process.env.WEB_PORT || 3001), '0.0.0.0', () => {
   console.log(`TechHub frontend đang chạy tại cổng ${process.env.WEB_PORT || 3001}`);
 });

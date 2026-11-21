@@ -54,3 +54,14 @@ Compose chạy hai bản sao backend qua `deploy.replicas`. Nginx 1.27 tự phâ
 - Mở `/api/auth/providers` để xem OAuth provider đã được cấu hình; khi chưa có credentials, các nút OAuth sẽ bị ẩn.
 
 Schema được khởi tạo trên volume mới. Khi thay đổi schema trong lúc phát triển, thêm migration; file `db/schema.sql` init chỉ tự chạy khi volume PostgreSQL chưa có dữ liệu.
+
+## Quản trị (Giai đoạn 5)
+
+- Đăng nhập bằng tài khoản admin trong `.env`, sau đó mở `http://localhost:8080/admin`.
+- Dashboard cơ bản hiển thị tổng customer, customer mới trong tháng, tổng đơn, doanh thu và top sản phẩm bán chạy. Dashboard nâng cao lọc theo năm, quý, tháng, tuần hoặc khoảng ngày; so sánh với kỳ liền trước và vẽ biểu đồ doanh thu, số đơn, lợi nhuận gộp.
+- Lợi nhuận gộp lấy `tiền hàng - coupon - điểm đã dùng - giá vốn snapshot`, chưa trừ thuế, phí giao hàng và chi phí vận hành. Giai đoạn này thêm `variants.cost_vnd` và `order_items.unit_cost_vnd`; migration bổ sung cột trên database đang dùng. Dữ liệu seed đặt giá vốn mẫu bằng 80% giá bán.
+- Quản lý sản phẩm hỗ trợ thêm/sửa/xóa, trạng thái hiển thị, danh mục, thương hiệu, ảnh và biến thể; mỗi sản phẩm có tối thiểu 2 biến thể, 3 ảnh. Biến thể được nhập bằng các trường UI riêng: SKU, tên, giá bán, giá vốn và tồn kho.
+- Quản lý customer cho phép tìm, sửa họ tên/email và khóa/mở khóa. Không cho chỉnh sửa tài khoản admin.
+- Danh sách đơn mới nhất trước, 20/trang, lọc theo hôm nay/hôm qua/tuần/tháng/khoảng ngày; chi tiết hiển thị mặt hàng và lịch sử, có thể cập nhật trạng thái.
+- Quản lý mã giảm giá hiển thị ngày tạo, mức giảm, lượt đã dùng/tối đa và các đơn áp dụng. Mã mới phải đúng 5 ký tự chữ-số, lượt tối đa không quá 10 và không có ngày hết hạn.
+- Admin API: `GET /api/admin/dashboard`, `GET /api/admin/analytics`, `GET/POST /api/admin/products`, `PATCH/DELETE /api/admin/products/:id`, `GET /api/admin/users`, `PATCH /api/admin/users/:id`, `GET /api/admin/orders`, `GET /api/admin/orders/:id`, `PATCH /api/admin/orders/:id/status`, `GET/POST /api/admin/discounts`, `GET /api/admin/categories`, `GET /api/admin/brands`. Tất cả endpoint yêu cầu đăng nhập admin và request ghi cần CSRF token.

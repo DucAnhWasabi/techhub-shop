@@ -12,6 +12,7 @@ const catalogRoutes = require('./routes/catalogRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const checkoutRoutes = require('./routes/checkoutRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const { requireCustomer } = require('./middleware/auth');
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api', catalogRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/me/orders', orderRoutes);
+app.use('/api/admin', adminRoutes);
 app.get('/api/profile', requireCustomer, async (req, res, next) => {
   try {
     const users = require('./services/users');
