@@ -121,11 +121,11 @@ SESSION_SECRET=thay-bang-chuoi-ngau-nhien-dai
 | /login                     | Đăng nhập và OAuth nếu đã cấu hình                           |
 | /forgot-password           | Yêu cầu khôi phục mật khẩu                                   |
 | /reset-password?token=...  | Đặt mật khẩu mới                                             |
-| /account                  |  Hồ sơ, mật khẩu và địa chỉ giao hàng                         |
-| /cart                     | Cart guest/customer                                          |
-| /checkout                 | Checkout COD, coupon, loyalty và địa chỉ                     |
-| /orders                   | Lịch sử đơn của customer đăng nhập                           |
-| /orders/:id               | Chi tiết đơn và lịch sử trạng thái                           |
+| /account                   |  Hồ sơ, mật khẩu và địa chỉ giao hàng                        |
+| /cart                      | Cart guest/customer                                          |
+| /checkout                  | Checkout COD, coupon, loyalty và địa chỉ                     |
+| /orders                    | Lịch sử đơn của customer đăng nhập                           |
+| /orders/:id                | Chi tiết đơn và lịch sử trạng thái                           |
 +----------------------------+--------------------------------------------------------------+
 
 ### API catalog và review
