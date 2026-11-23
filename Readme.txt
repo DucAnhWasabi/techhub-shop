@@ -91,7 +91,7 @@ Các tài khoản được tạo bởi service seed trên database mới:
 +---------------+------------------------------+------------------------+----------------------------------------------+
 | Vai trò       | Email                        | Mật khẩu               | Trạng thái                                   |
 +---------------+------------------------------+------------------------+----------------------------------------------+
-| Administrator | admin@techhub.local          | Admin123!ChangeMe      | Có account, giao diện admin chưa hoàn thành  |
+| Administrator | admin@techhub.local          | Admin123!ChangeMe      | Có dashboard và trang quản trị; cần kiểm tra end-to-end |
 | Customer      | minh.nguyen@example.com      | Customer123!ChangeMe   | Có dữ liệu địa chỉ mẫu                       |
 | Customer      | linh.tran@example.com        | Customer123!ChangeMe   | Có dữ liệu địa chỉ mẫu                       |
 | Customer      | khoa.le@example.com          | Customer123!ChangeMe   | Có dữ liệu địa chỉ mẫu                       |
@@ -126,6 +126,7 @@ SESSION_SECRET=thay-bang-chuoi-ngau-nhien-dai
 | /checkout                  | Checkout COD, coupon, loyalty và địa chỉ                     |
 | /orders                    | Lịch sử đơn của customer đăng nhập                           |
 | /orders/:id                | Chi tiết đơn và lịch sử trạng thái                           |
+| /admin                     | Dashboard và trang quản trị                                  |
 +----------------------------+--------------------------------------------------------------+
 
 ### API catalog và review
@@ -161,10 +162,21 @@ Các giá trị `sort`: `name_asc`, `name_desc`, `price_asc`, `price_desc`, `new
 | POST | `/api/checkout/place-order` | Tạo đơn COD và xử lý tồn kho trong transaction |
 | GET | `/api/me/orders` | Lịch sử đơn của customer đăng nhập |
 | GET | `/api/me/orders/:id` | Chi tiết đơn và status history theo owner |
+| GET | `/api/admin/dashboard` | Chỉ số tổng quan và sản phẩm bán chạy; yêu cầu admin |
+| GET | `/api/admin/analytics` | Báo cáo theo kỳ; yêu cầu admin |
+| GET/POST | `/api/admin/products` | Đọc danh sách/tạo sản phẩm; yêu cầu admin |
+| PATCH/DELETE | `/api/admin/products/:id` | Cập nhật/xóa sản phẩm; yêu cầu admin |
+| GET | `/api/admin/users` | Đọc danh sách customer; yêu cầu admin |
+| PATCH | `/api/admin/users/:id` | Cập nhật customer; yêu cầu admin |
+| GET | `/api/admin/orders`, `/api/admin/orders/:id` | Đọc danh sách/chi tiết đơn; yêu cầu admin |
+| PATCH | `/api/admin/orders/:id/status` | Cập nhật trạng thái đơn; yêu cầu admin |
+| GET/POST | `/api/admin/discounts` | Đọc và tạo discount; yêu cầu admin |
 
-Các luồng chi tiết nằm ở `bonus/11-cart.md` và `bonus/12-checkout-order.md`.
+Các luồng chi tiết nằm ở `bonus/11-cart.md`, `bonus/12-checkout-order.md` và `bonus/13-admin.md`.
 
 ## 6. Hướng dẫn kiểm tra chức năng hiện có
+
+Tiến độ được rà theo source ngày 23/11/2026. Dấu `[x]` dưới đây nghĩa là đã thấy route/service/UI tương ứng trong source; không thay cho xác nhận chạy end-to-end.
 
 - [x] Mở landing page và xem nhóm sản phẩm mới.
 - [x] Mở nhóm sản phẩm bán chạy.
@@ -191,9 +203,9 @@ Các luồng chi tiết nằm ở `bonus/11-cart.md` và `bonus/12-checkout-orde
 - [x] Gửi email xác nhận sau commit; cần SMTP để gửi thật.
 - [x] Áp dụng discount code với giới hạn lượt sử dụng.
 - [x] Loyalty: dùng điểm và ghi điểm earned/redeemed khi tạo order.
-- [ ] Admin dashboard.
-- [ ] Admin product/user/order management.
-- [ ] Admin discount management.
+- [x] Admin dashboard và analytics (đã có code; cần kiểm tra end-to-end).
+- [x] Admin product/customer/order management, gồm cập nhật trạng thái đơn (đã có code; cần kiểm tra quyền và thao tác end-to-end).
+- [x] Admin tạo/xem discount (chưa có thao tác sửa/xóa discount).
 
 ## 7. Tiến độ theo rubric
 
@@ -210,14 +222,14 @@ Các luồng chi tiết nằm ở `bonus/11-cart.md` và `bonus/12-checkout-orde
 | Product detail/variants        | 100%    | 40 sản phẩm, 2 variants, 3 ảnh mỗi sản phẩm   |
 | Cart                           | 90%     | Guest/customer cart, merge và UI; cần E2E     |
 | Checkout/payment               | 75%     | Quote + COD order có transaction; chưa có payment gateway |
-| Discount                       | 75%     | Coupon checkout và giới hạn lượt; chưa có admin management |
+| Discount                       | 85%     | Coupon checkout và admin tạo/xem mã; chưa có sửa/xóa mã |
 | Email sau order                | 70%     | Gửi confirmation sau commit; phụ thuộc SMTP   |
 | Comment/rating                 | 80%     | Có API/Socket.IO, cần kiểm tra realtime       |
 | Loyalty                        | 70%     | Redeem/earn trong order; chưa có trang lịch sử hoặc admin adjustment |
-| Admin                          | 0%      | Có account, chưa có admin module              |
-| UI/UX/responsive               | 75%     | Đã có cart, checkout và order pages; cần rà soát responsive toàn site |
+| Admin                          | 80%     | Dashboard, analytics, quản lý sản phẩm/customer/order và tạo/xem discount; cần E2E |
+| UI/UX/responsive               | 80%     | Có trang quản trị; cần rà soát responsive toàn site |
 | Docker deployment              | 80%     | Chạy local sau build                          |
-| Horizontal scaling             | 40%     | Có Redis/Nginx, chưa chứng minh replicas      |
+| Horizontal scaling             | 70%     | Compose cấu hình 2 backend và Nginx upstream; cần xác nhận chạy thực tế |
 +--------------------------------+---------+-----------------------------------------------+
 
 ### Sơ đồ tiến độ theo luồng
@@ -243,11 +255,11 @@ flowchart TD
     Q --> R[Order confirmation email]
     Q --> S[Loyalty earn/redeem]
     Q --> V[Customer order history/detail]
-    Q -. not implemented .-> T[Admin dashboard]
-    T -. not implemented .-> U[Admin product user order discount]
+    Q --> T[Admin dashboard and analytics]
+    T --> U[Admin product customer order discount]
 ```
 
-Luồng nét liền đã có triển khai trong source; cấu hình SMTP và kiểm tra end-to-end vẫn cần thực hiện. Luồng nét đứt chưa được triển khai.
+Luồng nét liền đã có triển khai trong source; cấu hình SMTP và kiểm tra end-to-end vẫn cần thực hiện. Payment gateway chưa được triển khai.
 
 ## 8. Cấu hình OAuth và email
 
@@ -361,8 +373,8 @@ src/
   config/                PostgreSQL, Redis, Passport
   controllers/           Xử lý request/response
   middleware/            Auth, CSRF, rate limit
-  routes/                Auth, profile, catalog routes
-  services/              Auth, users, catalog, validation, mailer
+  routes/                Auth, profile, catalog, cart, checkout, order, admin
+  services/              Auth, users, catalog, cart, checkout, order, admin, mailer
 frontend/
   server.js              EJS server và page routes
   views/                 Các trang giao diện
@@ -380,10 +392,10 @@ Dockerfile               Node.js image
 
 - Project hiện chỉ bán máy tính và linh kiện máy tính; seed không có điện thoại hoặc sản phẩm ngoài phạm vi đề.
 - Cart, checkout COD, order, discount redemption, loyalty ledger và customer order history đã có route/service/UI; xem sequence tại `bonus/11-cart.md` và `bonus/12-checkout-order.md`.
-- Tài khoản admin đã được seed nhưng chưa có giao diện hoặc API admin tương ứng.
+- Admin page/API đã có dashboard, analytics, product/customer/order management và discount; cần kiểm tra end-to-end. Chưa có sửa/xóa discount.
 - Chưa có public URL.
 - Chưa có video demo, thư mục ảnh GitHub Insights hoặc file tự đánh giá rubric trong repository này; các nội dung này cần chuẩn bị riêng khi nộp bài.
-- Chưa có payment gateway, admin dashboard/management, CI/CD, microservices, AI chatbot/image search/sentiment analysis hoặc Elasticsearch.
+- Chưa có payment gateway, CI/CD, microservices, AI chatbot/image search/sentiment analysis hoặc Elasticsearch.
 
 ## 12. Thứ tự triển khai tiếp theo
 
@@ -400,10 +412,10 @@ Dockerfile               Node.js image
 [4] Cấu hình SMTP; hoàn thiện cập nhật trạng thái và tracking order
 	|
 	v
-[5] Payment gateway và admin order/product/user/discount
+[5] Payment gateway; bổ sung sửa/xóa discount nếu cần
 	|
 	v
-[6] Simple dashboard + advanced dashboard
+[6] Kiểm tra end-to-end admin dashboard/analytics và quyền truy cập
 	|
 	v
 [7] Fix realtime review + test end-to-end

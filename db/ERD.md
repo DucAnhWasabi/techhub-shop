@@ -1,141 +1,230 @@
-# TechHub Shop - ERD
+﻿# TechHub Shop — ERD theo nhóm nghiệp vụ
 
-Sơ đồ dưới đây mô tả database hiện tại trong `db/schema.sql`. Các luồng cart, checkout COD, tạo order, discount redemption, loyalty và order history đã có service/API trong source. Schema vẫn là mô hình dữ liệu; xem `bonus/11-cart.md` và `bonus/12-checkout-order.md` để theo dõi trình tự xử lý. Payment gateway và admin management chưa được triển khai.
+Các hình bên dưới bám theo `db/schema.sql` và migration hiện tại. ERD được tách nhỏ để dễ đọc; bảng cha/con nối với nhau bằng đường quan hệ có cardinality. Vì đường quan hệ đã biểu diễn khóa ngoại, các box chỉ liệt kê khóa chính và thuộc tính đáng chú ý, không lặp lại cột FK.
+
+Ký hiệu ở đầu mỗi đường nói số bản ghi có thể tham gia quan hệ: `||` là đúng một, `o|` là không hoặc một, `o{` là không hoặc nhiều. Ví dụ `USERS ||--o{ ADDRESSES` nghĩa một user có thể có nhiều địa chỉ, còn mỗi địa chỉ thuộc đúng một user. Với quan hệ tùy chọn, phía `o|` khớp FK nullable trong schema.
+
+## 1. Tài khoản, đăng nhập và địa chỉ
+
+![ERD: 1. Tài khoản, đăng nhập và địa chỉ](./ERD-01.svg)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
+%%{init: {"theme":"base", "themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryColor":"#eff6ff","primaryBorderColor":"#1e3a8a","primaryTextColor":"#111827","lineColor":"#111827","textColor":"#111827"}}}%%
 erDiagram
-    %% Theme đậm để đường quan hệ và viền entity rõ khi preview trên nền sáng.
-    %%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial", "primaryColor": "#e8eefc", "primaryBorderColor": "#111827", "primaryTextColor": "#111827", "lineColor": "#111827", "textColor": "#111827", "secondaryColor": "#fef3c7", "tertiaryColor": "#dcfce7"}}}%%
     USERS {
         uuid id PK
         text email UK
         text full_name
-        text password_hash
         text role
         boolean is_banned
         integer loyalty_balance
-        timestamptz created_at
-        timestamptz updated_at
     }
-
     OAUTH_ACCOUNTS {
         uuid id PK
-        uuid user_id FK
         text provider
         text provider_user_id
-        timestamptz created_at
     }
-
     PASSWORD_RESET_TOKENS {
         uuid id PK
-        uuid user_id FK
         text token_hash UK
         timestamptz expires_at
         timestamptz used_at
-        timestamptz created_at
     }
-
     ADDRESSES {
         uuid id PK
-        uuid user_id FK
         text recipient_name
         text phone
         text line1
-        text line2
-        text ward
-        text district
         text province
-        text postal_code
         boolean is_default
-        timestamptz created_at
-        timestamptz updated_at
     }
 
+    USERS ||--o{ OAUTH_ACCOUNTS : liên_kết
+    USERS ||--o{ PASSWORD_RESET_TOKENS : yêu_cầu
+    USERS ||--o{ ADDRESSES : sở_hữu
+```
+
+</details>
+
+## 2. Danh mục và nội dung sản phẩm
+
+![ERD: 2. Danh mục và nội dung sản phẩm](./ERD-02.svg)
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+%%{init: {"theme":"base", "themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryColor":"#eff6ff","primaryBorderColor":"#1e3a8a","primaryTextColor":"#111827","lineColor":"#111827","textColor":"#111827"}}}%%
+erDiagram
     BRANDS {
         uuid id PK
         text name UK
         text slug UK
-        text description
-        timestamptz created_at
     }
-
     CATEGORIES {
         uuid id PK
         text name UK
         text slug UK
-        text description
-        uuid parent_id FK
     }
-
     PRODUCTS {
         uuid id PK
         text name
         text slug UK
-        uuid brand_id FK
-        uuid category_id FK
-        text short_description
-        text description
         text status
-        timestamptz created_at
-        timestamptz updated_at
     }
-
     PRODUCT_IMAGES {
         uuid id PK
-        uuid product_id FK
         text image_url
-        text alt_text
         integer position
     }
-
     VARIANTS {
         uuid id PK
-        uuid product_id FK
         text sku UK
         text name
-        jsonb attributes
         bigint price_vnd
+        bigint cost_vnd
         integer stock_quantity
-        boolean is_active
-        timestamptz created_at
-        timestamptz updated_at
     }
-
     REVIEWS {
         uuid id PK
-        uuid product_id FK
-        uuid user_id FK
         text author_name
         text body
-        timestamptz created_at
     }
-
     RATINGS {
         uuid id PK
-        uuid product_id FK
-        uuid user_id FK
         smallint stars
-        timestamptz created_at
         timestamptz updated_at
     }
+    USERS {
+        uuid id PK
+        text full_name
+    }
 
+    BRANDS ||--o{ PRODUCTS : thương_hiệu
+    CATEGORIES ||--o{ PRODUCTS : phân_loại
+    CATEGORIES o|--o{ CATEGORIES : danh_mục_cha
+    PRODUCTS ||--o{ PRODUCT_IMAGES : có_ảnh
+    PRODUCTS ||--o{ VARIANTS : có_biến_thể
+    PRODUCTS ||--o{ REVIEWS : nhận_bình_luận
+    PRODUCTS ||--o{ RATINGS : nhận_đánh_giá
+    USERS o|--o{ REVIEWS : viết_review
+    USERS ||--o{ RATINGS : đánh_giá
+```
+
+</details>
+
+`variants.cost_vnd` là giá vốn hiện dùng cho báo cáo lợi nhuận quản trị. Mỗi rating gắn với một customer/product duy nhất; review có thể không gắn user nếu được gửi khi chưa đăng nhập.
+
+## 3. Cart guest và customer
+
+![ERD: 3. Cart guest và customer](./ERD-03.svg)
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+%%{init: {"theme":"base", "themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryColor":"#eff6ff","primaryBorderColor":"#1e3a8a","primaryTextColor":"#111827","lineColor":"#111827","textColor":"#111827"}}}%%
+erDiagram
+    USERS {
+        uuid id PK
+        text email UK
+    }
     CARTS {
         uuid id PK
-        uuid user_id FK
         text guest_token_hash UK
         timestamptz created_at
-        timestamptz updated_at
     }
-
     CART_ITEMS {
         uuid id PK
-        uuid cart_id FK
-        uuid variant_id FK
         integer quantity
-        timestamptz created_at
-        timestamptz updated_at
+    }
+    VARIANTS {
+        uuid id PK
+        text sku UK
+        bigint price_vnd
+        integer stock_quantity
     }
 
+    USERS o|--o| CARTS : sở_hữu_cart
+    CARTS ||--o{ CART_ITEMS : chứa
+    VARIANTS ||--o{ CART_ITEMS : được_chọn
+```
+
+</details>
+
+Mỗi cart thuộc đúng một customer hoặc guest token: hai định danh loại trừ nhau bằng CHECK constraint. Guest token trong cookie được hash trước khi lưu. Khi customer đăng nhập, cart guest được gộp vào cart customer.
+
+## 4. Đơn hàng và lịch sử trạng thái
+
+![ERD: 4. Đơn hàng và lịch sử trạng thái](./ERD-04.svg)
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+%%{init: {"theme":"base", "themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryColor":"#eff6ff","primaryBorderColor":"#1e3a8a","primaryTextColor":"#111827","lineColor":"#111827","textColor":"#111827"}}}%%
+erDiagram
+    USERS {
+        uuid id PK
+        text email UK
+        text full_name
+    }
+    ORDERS {
+        uuid id PK
+        text order_number UK
+        jsonb shipping_address_snapshot
+        bigint subtotal_vnd
+        bigint total_vnd
+        text status
+    }
+    ORDER_ITEMS {
+        uuid id PK
+        text sku_snapshot
+        text product_name_snapshot
+        bigint unit_price_vnd
+        bigint unit_cost_vnd
+        integer quantity
+    }
+    ORDER_STATUS_HISTORY {
+        uuid id PK
+        text status
+        text note
+        timestamptz created_at
+    }
+    VARIANTS {
+        uuid id PK
+        text sku UK
+    }
+
+    USERS ||--o{ ORDERS : đặt_đơn
+    ORDERS ||--o{ ORDER_ITEMS : gồm_dòng_hàng
+    ORDERS ||--o{ ORDER_STATUS_HISTORY : ghi_lịch_sử
+    VARIANTS o|--o{ ORDER_ITEMS : tham_chiếu
+    USERS o|--o{ ORDER_STATUS_HISTORY : cập_nhật_bởi
+```
+
+</details>
+
+Guest checkout tạo/liên kết customer theo email nên `orders.user_id` luôn có giá trị. Order và từng item giữ snapshot để lịch sử mua không đổi khi sản phẩm hoặc địa chỉ được chỉnh sửa. `order_items.variant_id` có thể NULL nếu variant được xóa; dòng hàng snapshot vẫn được giữ.
+
+## 5. Discount và loyalty
+
+![ERD: 5. Discount và loyalty](./ERD-05.svg)
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+%%{init: {"theme":"base", "themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryColor":"#eff6ff","primaryBorderColor":"#1e3a8a","primaryTextColor":"#111827","lineColor":"#111827","textColor":"#111827"}}}%%
+erDiagram
+    USERS {
+        uuid id PK
+        text email UK
+        integer loyalty_balance
+    }
     DISCOUNTS {
         uuid id PK
         text code UK
@@ -143,173 +232,49 @@ erDiagram
         bigint value
         smallint max_uses
         smallint used_count
-        uuid created_by_admin_id FK
-        timestamptz created_at
         boolean is_active
     }
-
     ORDERS {
         uuid id PK
         text order_number UK
-        uuid user_id FK
-        text email
-        text recipient_name
-        jsonb shipping_address_snapshot
-        bigint subtotal_vnd
         bigint discount_vnd
         bigint loyalty_redeemed_vnd
-        bigint tax_vnd
-        bigint shipping_fee_vnd
-        bigint total_vnd
-        text status
-        uuid discount_id FK
-        timestamptz created_at
-        timestamptz updated_at
     }
-
-    ORDER_ITEMS {
-        uuid id PK
-        uuid order_id FK
-        uuid variant_id FK
-        text sku_snapshot
-        text product_name_snapshot
-        text variant_name_snapshot
-        bigint unit_price_vnd
-        integer quantity
-        bigint line_total_vnd
-    }
-
-    ORDER_STATUS_HISTORY {
-        uuid id PK
-        uuid order_id FK
-        text status
-        text note
-        uuid changed_by_user_id FK
-        timestamptz created_at
-    }
-
     DISCOUNT_REDEMPTIONS {
         uuid id PK
-        uuid discount_id FK
-        uuid order_id FK
-        uuid user_id FK
         bigint discount_vnd
         timestamptz created_at
     }
-
     LOYALTY_POINTS {
         uuid id PK
-        uuid user_id FK
-        uuid order_id FK
         text type
         integer points
         bigint amount_vnd
-        timestamptz created_at
     }
 
-    USERS ||--o{ OAUTH_ACCOUNTS : has
-    USERS ||--o{ PASSWORD_RESET_TOKENS : requests
-    USERS ||--o{ ADDRESSES : owns
-    USERS ||--o{ REVIEWS : writes
-    USERS ||--o{ RATINGS : submits
-    USERS ||--o{ CARTS : owns
-    USERS ||--o{ ORDERS : places
-    USERS ||--o{ ORDER_STATUS_HISTORY : changes
-    USERS ||--o{ DISCOUNT_REDEMPTIONS : uses
-    USERS ||--o{ LOYALTY_POINTS : earns_or_redeems
-
-    BRANDS ||--o{ PRODUCTS : brands
-    CATEGORIES ||--o{ PRODUCTS : contains
-    CATEGORIES ||--o{ CATEGORIES : parent_of
-    PRODUCTS ||--o{ PRODUCT_IMAGES : has
-    PRODUCTS ||--o{ VARIANTS : offers
-    PRODUCTS ||--o{ REVIEWS : receives
-    PRODUCTS ||--o{ RATINGS : receives
-
-    CARTS ||--o{ CART_ITEMS : contains
-    VARIANTS ||--o{ CART_ITEMS : selected_in
-
-    DISCOUNTS ||--o{ ORDERS : applied_to
-    DISCOUNTS ||--o{ DISCOUNT_REDEMPTIONS : redeemed_by
-    ORDERS ||--o{ ORDER_ITEMS : contains
-    ORDERS ||--o{ ORDER_STATUS_HISTORY : tracks
-    ORDERS ||--o| DISCOUNT_REDEMPTIONS : creates
-    VARIANTS ||--o{ ORDER_ITEMS : sold_as
-    ORDERS ||--o{ LOYALTY_POINTS : generates
-    DISCOUNTS }o--|| USERS : created_by_admin
-    ORDER_STATUS_HISTORY }o--o| USERS : changed_by
-    ORDER_ITEMS }o--o| VARIANTS : references
-    LOYALTY_POINTS }o--o| ORDERS : linked_to
+    USERS ||--o{ DISCOUNTS : tạo_discount
+    DISCOUNTS o|--o{ ORDERS : áp_dụng
+    DISCOUNTS ||--o{ DISCOUNT_REDEMPTIONS : redemption
+    ORDERS ||--o| DISCOUNT_REDEMPTIONS : tối_đa_một_lần
+    USERS ||--o{ DISCOUNT_REDEMPTIONS : sử_dụng
+    USERS ||--o{ LOYALTY_POINTS : loyalty_ledger
+    ORDERS o|--o{ LOYALTY_POINTS : phát_sinh
 ```
 
-## Bảng mô tả entity
+</details>
 
-Bảng dưới đây là phần ERD dạng bảng, dùng để tra cứu nhanh các entity trong hình bên trên.
+Discount redemption có tối đa một dòng cho mỗi order nhờ UNIQUE `order_id`. Loyalty ledger lưu earned/redeemed/adjustment; order link có thể NULL cho giao dịch điều chỉnh độc lập. Admin tạo discount; source hiện hỗ trợ tạo và xem danh sách mã.
 
-| Entity | Khóa chính | Khóa ngoại chính | Mục đích |
-|---|---|---|---|
-| `users` | `id` | - | Tài khoản customer/admin, trạng thái khóa và số dư loyalty |
-| `oauth_accounts` | `id` | `user_id -> users.id` | Liên kết tài khoản Google/Facebook |
-| `password_reset_tokens` | `id` | `user_id -> users.id` | Token khôi phục mật khẩu có thời hạn |
-| `addresses` | `id` | `user_id -> users.id` | Nhiều địa chỉ giao hàng của user |
-| `brands` | `id` | - | Thương hiệu sản phẩm |
-| `categories` | `id` | `parent_id -> categories.id` | Danh mục sản phẩm cha/con |
-| `products` | `id` | `brand_id -> brands.id`, `category_id -> categories.id` | Thông tin sản phẩm |
-| `product_images` | `id` | `product_id -> products.id` | Nhiều ảnh của sản phẩm |
-| `variants` | `id` | `product_id -> products.id` | Variant, SKU, giá và tồn kho độc lập |
-| `reviews` | `id` | `product_id -> products.id`, `user_id -> users.id` | Bình luận, có thể là guest comment |
-| `ratings` | `id` | `product_id -> products.id`, `user_id -> users.id` | Rating 1-5 sao của customer |
-| `carts` | `id` | `user_id -> users.id` hoặc guest token | Giỏ hàng của user hoặc guest |
-| `cart_items` | `id` | `cart_id -> carts.id`, `variant_id -> variants.id` | Các variant và số lượng trong cart |
-| `discounts` | `id` | `created_by_admin_id -> users.id` | Mã giảm giá do admin tạo |
-| `orders` | `id` | `user_id -> users.id`, `discount_id -> discounts.id` | Đơn hàng và tổng tiền tại thời điểm mua |
-| `order_items` | `id` | `order_id -> orders.id`, `variant_id -> variants.id` | Chi tiết sản phẩm trong order, có snapshot giá |
-| `order_status_history` | `id` | `order_id -> orders.id`, `changed_by_user_id -> users.id` | Lịch sử thay đổi trạng thái order |
-| `discount_redemptions` | `id` | `discount_id -> discounts.id`, `order_id -> orders.id`, `user_id -> users.id` | Lưu việc sử dụng discount trong order |
-| `loyalty_points` | `id` | `user_id -> users.id`, `order_id -> orders.id` | Điểm earned/redeemed/adjustment |
+## Ràng buộc chính trong schema
 
-## Bảng khóa và ràng buộc
+- Chỉ một tài khoản có role `admin`; mỗi customer có tối đa một cart; mỗi customer có tối đa một địa chỉ mặc định.
+- Một customer chỉ đánh giá một lần cho mỗi sản phẩm; số sao từ 1 đến 5.
+- SKU, email, slug sản phẩm và mã discount là duy nhất. Mã discount có đúng 5 ký tự chữ-số, tối đa 10 lượt sử dụng.
+- Giá, giá vốn và tồn kho không âm; số lượng trong cart/order phải lớn hơn 0.
+- Product status chỉ nhận `active` hoặc `hidden`; order status hiện được service giới hạn trong `pending`, `confirmed`, `processing`, `shipped`, `delivered`, `cancelled`.
 
-| Bảng | Ràng buộc quan trọng |
-|---|---|
-| `users` | `email` duy nhất; chỉ một user có role `admin` |
-| `addresses` | Mỗi user chỉ có một địa chỉ `is_default = TRUE` |
-| `products` | `slug` duy nhất; status chỉ là `active` hoặc `hidden` |
-| `variants` | `sku` duy nhất; giá và tồn kho không âm |
-| `ratings` | Một user chỉ rating một product một lần; stars từ 1 đến 5 |
-| `carts` | Cart phải thuộc user hoặc có guest token, không được đồng thời cả hai |
-| `cart_items` | Một variant chỉ xuất hiện một lần trong cùng cart; quantity lớn hơn 0 |
-| `discounts` | Code đúng 5 ký tự chữ/số; số lượt dùng tối đa là 10 |
-| `orders` | `order_number` duy nhất; lưu snapshot địa chỉ và giá trị đơn |
-| `discount_redemptions` | Một order chỉ có tối đa một redemption record |
+## Phạm vi tính năng theo source hiện tại
 
-## Quan hệ chính
-
-1. `users` là bảng trung tâm cho customer và admin.
-2. Một user có thể có nhiều OAuth account, password reset token, địa chỉ, review, rating, cart, order và loyalty record.
-3. Một product thuộc một brand và một category; product có nhiều image, variant, review và rating.
-4. Một cart có nhiều `cart_items`; mỗi cart item trỏ tới một variant.
-5. Một order thuộc một user và có nhiều `order_items`, `order_status_history` và loyalty record.
-6. `order_items` lưu snapshot tên sản phẩm, SKU, tên variant và giá tại thời điểm mua để không phụ thuộc dữ liệu product thay đổi sau này.
-7. `shipping_address_snapshot` trong `orders` lưu địa chỉ tại thời điểm đặt hàng.
-8. `discount_redemptions` liên kết discount, order và user; `order_id` là duy nhất nên một order chỉ có một redemption record.
-9. `categories.parent_id` cho phép tạo danh mục cha/con.
-
-## Ràng buộc đáng chú ý
-
-- Chỉ có một user có role `admin` nhờ partial unique index `one_admin_only`.
-- Mỗi user chỉ có một địa chỉ mặc định nhờ partial unique index `one_default_address_per_user`.
-- Một user chỉ được rating một lần cho mỗi product nhờ `UNIQUE(product_id, user_id)`.
-- Discount code có đúng 5 ký tự chữ và số, `max_uses` từ 1 đến 10.
-- Variant phải có giá và tồn kho không âm.
-- Rating phải nằm trong khoảng 1 đến 5 sao.
-- Cart phải là cart của user hoặc guest token, không được đồng thời có cả hai.
-- Product status hiện chỉ nhận `active` hoặc `hidden`.
-
-## Ghi chú theo luồng hiện tại
-
-- Guest cart được nhận diện bằng cookie `techhub.cart`; database chỉ lưu SHA-256 hash trong `carts.guest_token_hash`. Khi user đăng nhập, cart guest được gộp vào cart customer và số lượng được giới hạn theo tồn kho.
-- Guest checkout tạo/liên kết một customer theo email để đáp ứng `orders.user_id NOT NULL`; đơn guest sau đó có thể được xem khi customer truy cập bằng tài khoản email đó.
-- Checkout tạo đơn COD, snapshot địa chỉ và từng dòng hàng, giảm tồn kho, cập nhật coupon/loyalty, ghi lịch sử trạng thái ban đầu và xóa cart trong cùng transaction.
-- Email xác nhận được gửi sau khi transaction commit; lỗi gửi email không rollback đơn. Thanh toán hiện là COD, chưa tích hợp cổng thanh toán.
-- Order history/detail hiện dành cho customer đã đăng nhập; trạng thái mới được ghi khi tạo đơn, chưa có API quản trị cập nhật trạng thái.
+- Đã có cart, quote/checkout COD, tạo order trong transaction, coupon, loyalty, email sau commit và customer order history.
+- Đã có admin dashboard/analytics, quản lý sản phẩm/customer/order và discount; luồng admin được mô tả ở `bonus/13-admin.md`.
+- Chưa có payment gateway; hình ERD mô tả schema chứ không biểu diễn trạng thái triển khai hay hệ thống bên ngoài.

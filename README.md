@@ -17,7 +17,7 @@ Compose build image và cài npm dependencies trong Dockerfile; PostgreSQL tự 
 - Google OAuth callback: `http://localhost:8080/api/auth/google/callback`; Facebook callback: `http://localhost:8080/api/auth/facebook/callback`. Thêm Client ID/Secret tương ứng vào `.env`, đăng ký đúng callback URL đó ở Google Cloud/Facebook Developer, rồi rebuild backend bằng `docker compose up -d --build`.
 - Khôi phục mật khẩu cần SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`). Khi chạy local không cấu hình SMTP, link reset được ghi trong `docker compose logs backend`; production không ghi token ra log.
 - Migration idempotent tạo bảng token reset mật khẩu và index địa chỉ mặc định, nên vẫn áp dụng được trên volume DB từ giai đoạn trước.
-- Checkout chưa được dựng ở giai đoạn này. `src/services/users.js` cung cấp `ensureGuestCustomer(client, ...)` để luồng đặt hàng guest gọi bên trong transaction; tài khoản mới được gắn với email đơn hàng và lưu địa chỉ giao hàng mặc định. Checkout sẽ kết nối helper này ở giai đoạn tương ứng.
+- Checkout tại `/checkout` hỗ trợ guest/customer, quote coupon/loyalty, địa chỉ giao hàng và tạo đơn COD trong transaction. Guest order được gắn với customer theo email qua `ensureGuestCustomer(client, ...)`; tồn kho, coupon, điểm, order và status history được cập nhật đồng bộ. Chưa có payment gateway.
 
 ## Catalog, sản phẩm và đánh giá
 

@@ -1,49 +1,67 @@
 # Sequence 12 - Checkout, COD order và lịch sử mua hàng
 
-```mermaid
-sequenceDiagram
-    actor Customer
-    actor Guest
-    participant Browser as Browser - boundary
-    participant API as Express API - control
-    participant Checkout as Checkout Service - control
-    participant Cart as Cart Service - control
-    participant DB as PostgreSQL - database
-    participant Mailer as Mailer or local log - entity
+![Sequence diagram: checkout-order ](./12-checkout-order.svg)
 
-    Customer->>Browser: Chọn địa chỉ lưu hoặc nhập địa chỉ khác
-    Guest->>Browser: Nhập email, tên và địa chỉ giao hàng
-    Browser->>API: POST /api/checkout/quote + coupon/điểm + CSRF
-    API->>Cart: Resolve cart hiện tại
-    API->>Checkout: Kiểm tra item, tồn kho, coupon và số dư loyalty
-    Checkout->>DB: Đọc cart, variants, discount và loyalty_balance
-    Checkout->>Checkout: Tính giảm giá, thuế 10%, phí ship, COD và điểm
-    API-->>Browser: Quote để người mua xác nhận
+<details>
+<summary>PlantUML source</summary>
 
-    Customer->>Browser: Xác nhận đặt COD
-    Guest->>Browser: Xác nhận đặt COD
-    Browser->>API: POST /api/checkout/place-order + thông tin giao hàng + CSRF
-    API->>Checkout: Bắt đầu transaction đặt hàng
-    Checkout->>Cart: Resolve cart
-    Checkout->>DB: Lock cart/items, variants, customer và coupon
-    Checkout->>DB: Tạo/liên kết customer cho guest theo email
-    Checkout->>DB: Insert order và order_items snapshot
-    Checkout->>DB: Trừ tồn kho; ghi status history
-    Checkout->>DB: Tăng used_count, ghi redemption và loyalty ledger
-    Checkout->>DB: Xóa cart_items và COMMIT
-    Checkout->>Mailer: Gửi email xác nhận sau commit
-    Mailer-->>Checkout: Gửi được hoặc lỗi được ghi log
-    API-->>Browser: Mã đơn, tổng COD, trạng thái email
 
-    Customer->>Browser: Mở lịch sử /orders
-    Browser->>API: GET /api/me/orders?page&limit
-    API->>DB: Đọc các đơn của customer hiện tại
-    DB-->>Browser: Danh sách đơn phân trang
-    Customer->>Browser: Mở chi tiết đơn
-    Browser->>API: GET /api/me/orders/{id}
-    API->>DB: Đọc order, snapshot items và status history theo owner
-    DB-->>Browser: Chi tiết đơn và lịch sử trạng thái
+
+```plantuml
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+actor "Guest" as Guest #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Checkout Service" as Checkout #DCFCE7
+control "Cart Service" as Cart #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+entity "Mailer or local log" as Mailer #FEE2E2
+Customer -> Browser : Chọn địa chỉ lưu hoặc nhập địa chỉ khác
+Guest -> Browser : Nhập email, tên và địa chỉ giao hàng
+Browser -> API : POST /api/checkout/quote + coupon/điểm + CSRF
+API -> Cart : Resolve cart hiện tại
+API -> Checkout : Kiểm tra item, tồn kho, coupon và số dư loyalty
+Checkout -> DB : Đọc cart, variants, discount và loyalty_balance
+Checkout -> Checkout : Tính giảm giá, thuế 10%, phí ship, COD và điểm
+Checkout --> API : Quote đã tính
+API --> Browser : Quote để người mua xác nhận
+Customer -> Browser : Xác nhận đặt COD
+Guest -> Browser : Xác nhận đặt COD
+Browser -> API : POST /api/checkout/place-order + thông tin giao hàng + CSRF
+API -> Checkout : Bắt đầu transaction đặt hàng
+Checkout -> Cart : Resolve cart
+Checkout -> DB : Lock cart/items, variants, customer và coupon
+Checkout -> DB : Tạo/liên kết customer cho guest theo email
+Checkout -> DB : Insert order và order_items snapshot
+Checkout -> DB : Trừ tồn kho; ghi status history
+Checkout -> DB : Tăng used_count, ghi redemption và loyalty ledger
+Checkout -> DB : Xóa cart_items và COMMIT
+Checkout -> Mailer : Gửi email xác nhận sau commit
+Mailer --> Checkout : Gửi được hoặc lỗi được ghi log
+API --> Browser : Mã đơn, tổng COD, trạng thái email
+Customer -> Browser : Mở lịch sử /orders
+Browser -> API : GET /api/me/orders?page&limit
+API -> DB : Đọc các đơn của customer hiện tại
+DB --> API : Danh sách đơn phân trang
+API --> Browser : Danh sách đơn phân trang
+Customer -> Browser : Mở chi tiết đơn
+Browser -> API : GET /api/me/orders/{id}
+API -> DB : Đọc order, snapshot items và status history theo owner
+DB --> API : Chi tiết đơn và lịch sử trạng thái
+API --> Browser : Chi tiết đơn và lịch sử trạng thái
+@enduml
 ```
+
+</details>
 
 Related code: `frontend/public/js/checkout.js`, `frontend/public/js/orders.js`, `frontend/public/js/order-detail.js`, `src/routes/checkoutRoutes.js`, `src/routes/orderRoutes.js`, `src/services/checkoutService.js`, `src/services/orderService.js`, `src/services/pricing.js`, `src/services/mailer.js`.
 
