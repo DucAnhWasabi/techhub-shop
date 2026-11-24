@@ -1,11 +1,13 @@
 require('dotenv').config();
 const http = require('http');
+const os = require('os');
 const app = require('./app');
 const db = require('./config/db');
 const redis = require('./config/redis');
 const { Server } = require('socket.io');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const { isUuid } = require('./services/validation');
+const search = require('./services/searchService');
 
 const port = Number(process.env.PORT || 3000);
 const pubClient = redis.duplicate();
@@ -14,6 +16,8 @@ const subClient = redis.duplicate();
 async function start() {
   await db.query('SELECT 1');
   await Promise.all([redis.ping(), pubClient.ping(), subClient.ping()]);
+  try { await search.syncAll(); }
+  catch (error) { console.error('Không thể đồng bộ Elasticsearch lúc khởi động:', error.message); }
   const server = http.createServer(app);
   const io = new Server(server, { path: '/socket.io', serveClient: true });
   io.adapter(createAdapter(pubClient, subClient));
@@ -30,7 +34,7 @@ async function start() {
       } catch (error) { console.error('Không thể tham gia phòng sản phẩm:', error.message); }
     });
   });
-  server.listen(port, '0.0.0.0', () => console.log(`TechHub API đang chạy tại cổng ${port}`));
+  server.listen(port, '0.0.0.0', () => console.log(`TechHub API đang chạy tại cổng ${port} trên ${os.hostname()}`));
 }
 
 start().catch((error) => {

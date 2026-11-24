@@ -7,7 +7,8 @@
   "scripts": {
     "start:api": "node src/server.js",
     "start:web": "node frontend/server.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "check": "node scripts/check-syntax.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -25,6 +26,7 @@
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.13.1",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@elastic/elasticsearch": "~9.5.1",
     "socket.io": "^4.8.1"
   }
 }

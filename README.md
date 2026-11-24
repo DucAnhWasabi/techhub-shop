@@ -15,7 +15,7 @@ Compose build image và cài npm dependencies trong Dockerfile; PostgreSQL tự 
 - Đăng ký: `/register`, đăng nhập: `/login`, hồ sơ/địa chỉ: `/account`.
 - Tạo `.env` từ `.env.example`; đặt `SESSION_SECRET` ngẫu nhiên, dài. Session dùng Redis, cookie HttpOnly/SameSite=Lax; thao tác ghi cần CSRF token và endpoint đăng nhập có rate limit chia sẻ qua Redis.
 - Google OAuth callback: `http://localhost:8080/api/auth/google/callback`; Facebook callback: `http://localhost:8080/api/auth/facebook/callback`. Thêm Client ID/Secret tương ứng vào `.env`, đăng ký đúng callback URL đó ở Google Cloud/Facebook Developer, rồi rebuild backend bằng `docker compose up -d --build`.
-- Khôi phục mật khẩu cần SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`). Khi chạy local không cấu hình SMTP, link reset được ghi trong `docker compose logs backend`; production không ghi token ra log.
+- Khôi phục mật khẩu cần SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`). Khi chạy local không cấu hình SMTP, link reset được ghi trong `docker compose logs backend-1 backend-2`; production không ghi token ra log.
 - Migration idempotent tạo bảng token reset mật khẩu và index địa chỉ mặc định, nên vẫn áp dụng được trên volume DB từ giai đoạn trước.
 - Checkout tại `/checkout` hỗ trợ guest/customer, quote coupon/loyalty, địa chỉ giao hàng và tạo đơn COD trong transaction. Guest order được gắn với customer theo email qua `ensureGuestCustomer(client, ...)`; tồn kho, coupon, điểm, order và status history được cập nhật đồng bộ. Chưa có payment gateway.
 
@@ -41,11 +41,11 @@ Tài khoản demo mặc định (đổi trong `.env` trước khi chạy):
 - Admin: `admin@techhub.local` / `Admin123!ChangeMe`
 - Customer: `minh.nguyen@example.com` / `Customer123!ChangeMe`
 
-Compose chạy hai bản sao backend qua `deploy.replicas`. Nginx 1.27 tự phân giải địa chỉ service Docker và cân bằng các request API tới backend replicas. Uploads sẽ dùng volume dùng chung ở giai đoạn tính năng upload.
+Compose chạy riêng hai service `backend-1` và `backend-2`. Nginx 1.27 tự phân giải địa chỉ service Docker và phân phối request API round-robin. Uploads sẽ dùng volume dùng chung ở giai đoạn tính năng upload.
 
 ## Kiểm tra thủ công
 
-- `docker compose ps` xác nhận các service đã chạy và có hai container `backend`.
+- `docker compose ps` xác nhận các service đã chạy, gồm `backend-1` và `backend-2`.
 - Mở `/` để xem trang landing page và sản phẩm từ DB.
 - Gọi `GET /api/products` và xác nhận có 40 sản phẩm.
 - Gọi `GET /api/health` để kiểm tra API.
@@ -65,3 +65,12 @@ Schema được khởi tạo trên volume mới. Khi thay đổi schema trong l�
 - Danh sách đơn mới nhất trước, 20/trang, lọc theo hôm nay/hôm qua/tuần/tháng/khoảng ngày; chi tiết hiển thị mặt hàng và lịch sử, có thể cập nhật trạng thái.
 - Quản lý mã giảm giá hiển thị ngày tạo, mức giảm, lượt đã dùng/tối đa và các đơn áp dụng. Mã mới phải đúng 5 ký tự chữ-số, lượt tối đa không quá 10 và không có ngày hết hạn.
 - Admin API: `GET /api/admin/dashboard`, `GET /api/admin/analytics`, `GET/POST /api/admin/products`, `PATCH/DELETE /api/admin/products/:id`, `GET /api/admin/users`, `PATCH /api/admin/users/:id`, `GET /api/admin/orders`, `GET /api/admin/orders/:id`, `PATCH /api/admin/orders/:id/status`, `GET/POST /api/admin/discounts`, `GET /api/admin/categories`, `GET /api/admin/brands`. Tất cả endpoint yêu cầu đăng nhập admin và request ghi cần CSRF token.
+
+## Scaling và bonus (Giai đoạn 6)
+
+- Nginx upstream khai báo rõ `backend-1` và `backend-2`; Nginx phân phối request theo round-robin mặc định. Session dùng Redis, giỏ và dữ liệu dùng PostgreSQL; backend không giữ trạng thái phiên trong RAM.
+- Mỗi API instance trả hostname tại `GET /api/instance` và ghi hostname khi khởi động. Dùng endpoint này để quan sát Nginx chuyển request qua hai container.
+- Elasticsearch chạy như service riêng trong Compose, chỉ expose trong network nội bộ. Backend tạo index `techhub-products` và đồng bộ catalog lúc khởi động; thao tác admin thêm/sửa/xóa sản phẩm cũng cập nhật index. Tìm kiếm toàn văn dùng Elasticsearch, sau đó PostgreSQL áp dụng bộ lọc giá/brand/category và phân trang; khi Elasticsearch không khả dụng, API tạm fallback sang tìm kiếm PostgreSQL.
+- `.github/workflows/ci-cd.yml` kiểm tra cú pháp, cấu hình Compose và build Docker trên pull request/push. Push lên `main` sẽ publish image lên GitHub Container Registry bằng `GITHUB_TOKEN`; không cần tạo secret registry riêng.
+- Elasticsearch dùng single-node và tắt authentication trong mạng Docker nội bộ để phù hợp đồ án local. Không publish cổng 9200 ra host.
+- Kiểm tra scaling trong PowerShell sau khi Compose khởi động: `docker compose ps backend-1 backend-2` phải hiện hai container; chạy `1..10 | ForEach-Object { (Invoke-RestMethod http://localhost:8080/api/instance).hostname } | Group-Object` để thấy request đi qua các hostname khác nhau. Tìm kiếm nhanh bằng `Invoke-RestMethod 'http://localhost:8080/api/products?q=ThinkCore'`.

@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { parseInteger } = require('./catalogService');
 const { cleanText, isUuid, normalizeEmail, validEmail } = require('./validation');
+const productSearch = require('./searchService');
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 const slugify = (value) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -165,6 +166,7 @@ async function saveProduct(id, body) {
       [productId,v.sku,v.name,v.price,v.cost,v.stock]);
     }
     await client.query('COMMIT');
+    await productSearch.indexProduct(productId);
     return productId;
   } catch (error) { await client.query('ROLLBACK'); if (error.code === '23505') fail('Tên/slug sản phẩm hoặc SKU đã được sử dụng.'); throw error; }
   finally { client.release(); }
@@ -178,6 +180,7 @@ async function deleteProduct(id) {
     const result = await client.query('DELETE FROM products WHERE id=$1 RETURNING id', [id]);
     if (!result.rowCount) fail('Không tìm thấy sản phẩm.', 404);
     await client.query('COMMIT');
+    await productSearch.removeProduct(id);
   } catch (error) { await client.query('ROLLBACK'); throw error; }
   finally { client.release(); }
 }

@@ -14,6 +14,7 @@ const checkoutRoutes = require('./routes/checkoutRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { requireCustomer } = require('./middleware/auth');
+const os = require('os');
 
 const app = express();
 app.disable('x-powered-by');
@@ -40,6 +41,7 @@ app.use(passport.session());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'techhub-api' }));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'techhub-api' }));
+app.get('/api/instance', (_req, res) => res.json({ service: 'techhub-api', hostname: process.env.HOSTNAME || os.hostname() }));
 app.get('/api/auth/csrf', (req, res) => res.json({ csrfToken: createToken(req) }));
 app.get('/api/auth/providers', (_req, res) => res.json({
   google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),

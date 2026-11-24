@@ -71,7 +71,7 @@ Lưu ý: image chưa được đóng gói sẵn trong repository, vì vậy lầ
 
 ```bash
 docker compose ps
-docker compose logs --tail=100 backend
+docker compose logs --tail=100 backend-1 backend-2
 docker compose logs --tail=100 frontend
 docker compose logs --tail=100 migrate
 docker compose logs --tail=100 seed
@@ -359,7 +359,7 @@ Kiểm tra `/api/auth/providers`. Nếu giá trị provider là `false`, kiểm 
 ### Không thấy reset link
 
 ```bash
-docker compose logs backend
+docker compose logs backend-1 backend-2
 ```
 
 Chỉ development mới ghi reset link vào log khi chưa cấu hình SMTP.
@@ -395,7 +395,10 @@ Dockerfile               Node.js image
 - Admin page/API đã có dashboard, analytics, product/customer/order management và discount; cần kiểm tra end-to-end. Chưa có sửa/xóa discount.
 - Chưa có public URL.
 - Chưa có video demo, thư mục ảnh GitHub Insights hoặc file tự đánh giá rubric trong repository này; các nội dung này cần chuẩn bị riêng khi nộp bài.
-- Chưa có payment gateway, CI/CD, microservices, AI chatbot/image search/sentiment analysis hoặc Elasticsearch.
+- Đã có GitHub Actions kiểm tra và publish Docker image lên GHCR; đã tích hợp Elasticsearch cho tìm kiếm catalog.
+- Chưa có payment gateway, microservices hoặc AI chatbot/image search/sentiment analysis.
+- Nginx cân bằng round-robin qua hai backend replicas; session lưu trên Redis. Xác nhận từng backend bằng `GET /api/instance`, trả hostname và ghi hostname khi khởi động.
+- Elasticsearch dùng single-node trong network nội bộ Compose, không publish cổng 9200 ra host; dữ liệu sản phẩm được đồng bộ lúc backend khởi động và khi admin thay đổi sản phẩm.
 
 ## 12. Thứ tự triển khai tiếp theo
 

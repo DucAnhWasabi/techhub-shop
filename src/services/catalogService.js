@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const productSearch = require('./searchService');
 
 const SORTS = {
   name_asc: 'p.name ASC',
@@ -42,7 +43,10 @@ function buildWhere(filters, source) {
   const clauses = ["p.status='active'"];
   const values = [];
   const add = (clause, value) => { values.push(value); clauses.push(clause.replace('?', `$${values.length}`)); };
-  if (filters.q) {
+  if (filters.q && Array.isArray(filters.searchIds)) {
+    if (!filters.searchIds.length) clauses.push('FALSE');
+    else { values.push(filters.searchIds); clauses.push(`p.id=ANY($${values.length}::uuid[])`); }
+  } else if (filters.q) {
     const value = `%${filters.q}%`;
     values.push(value, value, value);
     const last = values.length;
@@ -76,6 +80,7 @@ const listSelect = `
 
 async function listProducts(query, source = 'catalog') {
   const filters = parseFilters(query);
+  if (filters.q) filters.searchIds = await productSearch.searchIds(filters.q);
   const { where, values } = buildWhere(filters, source);
   const count = await db.query(
     `SELECT COUNT(*)::int AS total FROM products p
