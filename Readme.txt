@@ -1,430 +1,76 @@
-# TECHHUB SHOP
+TECHHUB SHOP - DO AN WEB PROGRAMMING WITH NODE.JS (502070)
+================================================================
 
-Website thương mại điện tử bán **máy tính và linh kiện máy tính** cho môn Web Programming with Node.js.
+1. CHAY UNG DUNG
 
-> Trạng thái của tài liệu này: cập nhật theo source code hiện tại. Các chức năng chưa có route, controller, service và giao diện tương ứng được đánh dấu là **Chưa hoàn thành**, không được xem là đã triển khai.
+Yeu cau: Docker Desktop dang chay va Docker Compose v2.
+Mo PowerShell tai thu muc goc project, sau do chay:
 
-## 1. Thông tin dự án
+    docker compose up -d
 
-+------------------+--------------------------------------------------------------+
-| Hạng mục         | Thông tin                                                    |
-+------------------+--------------------------------------------------------------+
-| Backend          | Node.js, Express.js                                          |
-| Frontend         | EJS, JavaScript thuần, Bootstrap 5                           |
-| Database         | PostgreSQL                                                   |
-| Session/cache    | Redis                                                        |
-| Realtime         | Socket.IO và Redis adapter                                   |
-| Reverse proxy    | Nginx                                                        |
-| Đóng gói         | Docker Compose                                               |
-| Cổng truy cập    | http://localhost:8080                                        |
-| API health check | http://localhost:8080/api/health                             |
-| Public URL       | Chưa triển khai public; chỉ có môi trường Docker local       |
-+------------------+--------------------------------------------------------------+
+Mo website:       http://localhost:8080
+Trang quan tri:   http://localhost:8080/admin
 
-## 2. Yêu cầu môi trường
+Kiem tra cac container:
 
-- Windows, macOS hoặc Linux.
-- Docker Desktop có Docker Compose v2.
-- Có thể kiểm tra bằng:
-
-```bash
-docker --version
-docker compose version
-```
-
-Không cần cài Node.js, PostgreSQL hoặc Redis trực tiếp trên máy nếu chạy bằng Docker Compose.
-
-## 3. Cách chạy cho giảng viên
-
-### Lần chạy đầu tiên
-
-Mở terminal tại thư mục chứa file này:
-
-```bash
-cd techhub-shop
-copy .env.example .env
-docker compose up -d --build
-```
-
-Trên macOS/Linux, dùng:
-
-```bash
-cp .env.example .env
-docker compose up -d --build
-```
-
-Sau khi các container healthy, mở:
-
-```text
-http://localhost:8080
-```
-
-### Những lần chạy tiếp theo
-
-```bash
-docker compose up -d
-```
-
-Lưu ý: image chưa được đóng gói sẵn trong repository, vì vậy lần đầu bắt buộc dùng `--build`. Đây là điểm cần hoàn thiện nếu muốn đáp ứng tuyệt đối yêu cầu chỉ chạy một lệnh `docker compose up -d` trên máy giảng viên.
-
-### Kiểm tra trạng thái
-
-```bash
-docker compose ps
-docker compose logs --tail=100 backend-1 backend-2
-docker compose logs --tail=100 frontend
-docker compose logs --tail=100 migrate
-docker compose logs --tail=100 seed
-```
-
-Health check:
-
-```text
-http://localhost:8080/health
-http://localhost:8080/api/health
-```
-
-## 4. Tài khoản dùng để đánh giá
-
-Các tài khoản được tạo bởi service seed trên database mới:
-
-+---------------+------------------------------+------------------------+----------------------------------------------+
-| Vai trò       | Email                        | Mật khẩu               | Trạng thái                                   |
-+---------------+------------------------------+------------------------+----------------------------------------------+
-| Administrator | admin@techhub.local          | Admin123!ChangeMe      | Có dashboard và trang quản trị; cần kiểm tra end-to-end |
-| Customer      | minh.nguyen@example.com      | Customer123!ChangeMe   | Có dữ liệu địa chỉ mẫu                       |
-| Customer      | linh.tran@example.com        | Customer123!ChangeMe   | Có dữ liệu địa chỉ mẫu                       |
-| Customer      | khoa.le@example.com          | Customer123!ChangeMe   | Có dữ liệu địa chỉ mẫu                       |
-+---------------+------------------------------+------------------------+----------------------------------------------+
-
-Đây là thông tin local mặc định để chấm bài. Không dùng các mật khẩu mặc định này khi public deployment. Có thể đổi qua `.env`:
-
-```env
-ADMIN_EMAIL=admin@techhub.local
-ADMIN_PASSWORD=thay-bang-mat-khau-moi
-SESSION_SECRET=thay-bang-chuoi-ngau-nhien-dai
-```
-
-## 5. Các đường dẫn chính
-
-### Giao diện
-
-+----------------------------+--------------------------------------------------------------+
-| URL                        | Mục đích                                                     |
-+----------------------------+--------------------------------------------------------------+
-| /                          | Landing page: sản phẩm mới, bán chạy và danh mục             |
-| /products                  | Catalog sản phẩm                                             |
-| /categories/:slug          | Catalog theo danh mục                                        |
-| /search?q=...              | Tìm kiếm sản phẩm                                            |
-| /products/:slug            | Chi tiết, variants, ảnh, review, rating                      |
-| /register                  | Đăng ký customer                                             |
-| /login                     | Đăng nhập và OAuth nếu đã cấu hình                           |
-| /forgot-password           | Yêu cầu khôi phục mật khẩu                                   |
-| /reset-password?token=...  | Đặt mật khẩu mới                                             |
-| /account                   |  Hồ sơ, mật khẩu và địa chỉ giao hàng                        |
-| /cart                      | Cart guest/customer                                          |
-| /checkout                  | Checkout COD, coupon, loyalty và địa chỉ                     |
-| /orders                    | Lịch sử đơn của customer đăng nhập                           |
-| /orders/:id                | Chi tiết đơn và lịch sử trạng thái                           |
-| /admin                     | Dashboard và trang quản trị                                  |
-+----------------------------+--------------------------------------------------------------+
-
-### API catalog và review
-
-+--------+-----------------------------+----------------------------------------------+
-| Method | Endpoint                    | Mục đích                                     |
-+--------+-----------------------------+----------------------------------------------+
-| GET    | /api/products               | Pagination, search, filter, sort             |
-| GET    | /api/products/new           | Sản phẩm mới                                 |
-| GET    | /api/products/best-sellers  | Sản phẩm bán chạy                            |
-| GET    | /api/products/:slug         | Chi tiết sản phẩm                            |
-| GET    | /api/categories             | Danh mục                                     |
-| GET    | /api/brands                 | Thương hiệu                                  |
-| GET    | /api/products/:id/reviews   | Danh sách bình luận                          |
-| POST   | /api/products/:id/reviews   | Comment, không bắt buộc login                |
-| POST   | /api/products/:id/ratings   | Rating 1-5 sao, bắt buộc customer login      |
-+--------+-----------------------------+----------------------------------------------+
-
-Catalog hỗ trợ các query chính: `page`, `limit`, `q`, `category`, `brand`, `minPrice`, `maxPrice`, `inStock`, `sort`.
-
-Các giá trị `sort`: `name_asc`, `name_desc`, `price_asc`, `price_desc`, `newest`, `best_sellers`.
-
-### API cart, checkout và order
-
-| Method | Endpoint | Mục đích |
-|---|---|---|
-| GET | `/api/cart` | Đọc cart guest/customer |
-| POST | `/api/cart/items` | Thêm variant vào cart |
-| PATCH | `/api/cart/items/:id` | Đổi số lượng; quantity 0 sẽ xóa |
-| DELETE | `/api/cart/items/:id` | Xóa một dòng cart |
-| DELETE | `/api/cart` | Xóa toàn bộ cart |
-| POST | `/api/checkout/quote` | Tính quote, coupon và loyalty |
-| POST | `/api/checkout/place-order` | Tạo đơn COD và xử lý tồn kho trong transaction |
-| GET | `/api/me/orders` | Lịch sử đơn của customer đăng nhập |
-| GET | `/api/me/orders/:id` | Chi tiết đơn và status history theo owner |
-| GET | `/api/admin/dashboard` | Chỉ số tổng quan và sản phẩm bán chạy; yêu cầu admin |
-| GET | `/api/admin/analytics` | Báo cáo theo kỳ; yêu cầu admin |
-| GET/POST | `/api/admin/products` | Đọc danh sách/tạo sản phẩm; yêu cầu admin |
-| PATCH/DELETE | `/api/admin/products/:id` | Cập nhật/xóa sản phẩm; yêu cầu admin |
-| GET | `/api/admin/users` | Đọc danh sách customer; yêu cầu admin |
-| PATCH | `/api/admin/users/:id` | Cập nhật customer; yêu cầu admin |
-| GET | `/api/admin/orders`, `/api/admin/orders/:id` | Đọc danh sách/chi tiết đơn; yêu cầu admin |
-| PATCH | `/api/admin/orders/:id/status` | Cập nhật trạng thái đơn; yêu cầu admin |
-| GET/POST | `/api/admin/discounts` | Đọc và tạo discount; yêu cầu admin |
-
-Các luồng chi tiết nằm ở `bonus/11-cart.md`, `bonus/12-checkout-order.md` và `bonus/13-admin.md`.
-
-## 6. Hướng dẫn kiểm tra chức năng hiện có
-
-Tiến độ được rà theo source ngày 23/11/2026. Dấu `[x]` dưới đây nghĩa là đã thấy route/service/UI tương ứng trong source; không thay cho xác nhận chạy end-to-end.
-
-- [x] Mở landing page và xem nhóm sản phẩm mới.
-- [x] Mở nhóm sản phẩm bán chạy.
-- [x] Mở danh mục sản phẩm.
-- [x] Mở catalog và chuyển trang.
-- [x] Tìm kiếm theo keyword.
-- [x] Lọc theo category, brand, khoảng giá và tình trạng tồn kho.
-- [x] Sắp xếp theo tên, giá, mới nhất và bán chạy.
-- [x] Mở product detail.
-- [x] Kiểm tra ít nhất 3 ảnh và 2 variants của sản phẩm.
-- [x] Gửi comment khi chưa đăng nhập.
-- [x] Đăng nhập customer và gửi rating sao.
-- [x] Đăng ký, đăng nhập và đăng xuất.
-- [x] Cập nhật tên tài khoản.
-- [x] Thêm, sửa, xóa và đổi địa chỉ mặc định.
-- [x] Đổi mật khẩu.
-- [x] Yêu cầu khôi phục mật khẩu.
-- [x] Kiểm tra CSRF, session Redis và rate limit.
-- [x] Thêm sản phẩm vào cart guest/customer; gộp cart khi đăng nhập (đã có code, cần kiểm tra end-to-end).
-- [x] Cập nhật, xóa item và xóa toàn bộ cart (đã có code, cần kiểm tra end-to-end).
-- [x] Guest checkout; đơn guest được liên kết customer theo email.
-- [x] Tạo order COD, snapshot mặt hàng/địa chỉ và trừ inventory bằng transaction.
-- [x] Order history/detail và lịch sử trạng thái ban đầu; chưa có công cụ cập nhật trạng thái.
-- [x] Gửi email xác nhận sau commit; cần SMTP để gửi thật.
-- [x] Áp dụng discount code với giới hạn lượt sử dụng.
-- [x] Loyalty: dùng điểm và ghi điểm earned/redeemed khi tạo order.
-- [x] Admin dashboard và analytics (đã có code; cần kiểm tra end-to-end).
-- [x] Admin product/customer/order management, gồm cập nhật trạng thái đơn (đã có code; cần kiểm tra quyền và thao tác end-to-end).
-- [x] Admin tạo/xem discount (chưa có thao tác sửa/xóa discount).
-
-## 7. Tiến độ theo rubric
-
-+--------------------------------+---------+-----------------------------------------------+
-| Nhóm yêu cầu                   | Tiến độ | Ghi chú                                       |
-+--------------------------------+---------+-----------------------------------------------+
-| Social media authentication    | 70%     | OAuth có khung, cần credentials/callback      |
-| Profile và change password     | 100%    | Đã có API và giao diện                        |
-| Password recovery              | 90%     | Cần SMTP hoặc xem token trong log local       |
-| Multiple delivery addresses    | 100%    | Thêm, sửa, xóa, đặt default                   |
-| Purchase history/details       | 80%     | Có order list/detail và status history; chưa có cập nhật trạng thái quản trị |
-| Landing page                   | 100%    | New, best sellers và nhiều danh mục           |
-| Product catalog                | 100%    | Pagination, filter, search, sort              |
-| Product detail/variants        | 100%    | 40 sản phẩm, 2 variants, 3 ảnh mỗi sản phẩm   |
-| Cart                           | 90%     | Guest/customer cart, merge và UI; cần E2E     |
-| Checkout/payment               | 75%     | Quote + COD order có transaction; chưa có payment gateway |
-| Discount                       | 85%     | Coupon checkout và admin tạo/xem mã; chưa có sửa/xóa mã |
-| Email sau order                | 70%     | Gửi confirmation sau commit; phụ thuộc SMTP   |
-| Comment/rating                 | 80%     | Có API/Socket.IO, cần kiểm tra realtime       |
-| Loyalty                        | 70%     | Redeem/earn trong order; chưa có trang lịch sử hoặc admin adjustment |
-| Admin                          | 80%     | Dashboard, analytics, quản lý sản phẩm/customer/order và tạo/xem discount; cần E2E |
-| UI/UX/responsive               | 80%     | Có trang quản trị; cần rà soát responsive toàn site |
-| Docker deployment              | 80%     | Chạy local sau build                          |
-| Horizontal scaling             | 70%     | Compose cấu hình 2 backend và Nginx upstream; cần xác nhận chạy thực tế |
-+--------------------------------+---------+-----------------------------------------------+
-
-### Sơ đồ tiến độ theo luồng
-
-```mermaid
-flowchart TD
-    A[Docker Compose] --> B[Database schema]
-    A --> C[Redis session]
-    A --> D[Nginx]
-    B --> E[Seed data]
-    E --> F[Catalog]
-    E --> G[Authentication]
-    E --> H[Profile and addresses]
-    F --> I[Search filter sort pagination]
-    F --> J[Product detail variants images]
-    J --> K[Comment and rating]
-    K --> L[Socket.IO realtime]
-    H --> M[Password recovery]
-    M --> N[SMTP email]
-    F --> O[Cart guest/customer]
-    O --> P[Checkout quote and COD]
-    P --> Q[Order transaction and inventory]
-    Q --> R[Order confirmation email]
-    Q --> S[Loyalty earn/redeem]
-    Q --> V[Customer order history/detail]
-    Q --> T[Admin dashboard and analytics]
-    T --> U[Admin product customer order discount]
-```
-
-Luồng nét liền đã có triển khai trong source; cấu hình SMTP và kiểm tra end-to-end vẫn cần thực hiện. Payment gateway chưa được triển khai.
-
-## 8. Cấu hình OAuth và email
-
-### Google/Facebook OAuth
-
-Thêm thông tin vào `.env`, sau đó rebuild:
-
-```env
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-FACEBOOK_APP_ID=
-FACEBOOK_APP_SECRET=
-BASE_URL=http://localhost:8080
-```
-
-Callback URL cần đăng ký:
-
-```text
-http://localhost:8080/api/auth/google/callback
-http://localhost:8080/api/auth/facebook/callback
-```
-
-Kiểm tra provider:
-
-```text
-http://localhost:8080/api/auth/providers
-```
-
-### Password recovery email
-
-```env
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-SMTP_FROM=TechHub <no-reply@techhub.local>
-```
-
-Nếu không cấu hình SMTP trong môi trường development, reset link chỉ được ghi trong log backend. Không dùng cách này cho production.
-
-## 9. Xử lý lỗi thường gặp
-
-### Container không khởi động
-
-```bash
-docker compose ps
-docker compose logs --tail=200 db
-docker compose logs --tail=200 migrate
-docker compose logs --tail=200 seed
-```
-
-Kiểm tra `.env` có `POSTGRES_PASSWORD`, `SESSION_SECRET` và thông tin database hợp lệ.
-
-### Database bị lỗi do volume cũ
-
-`db/schema.sql` chỉ tự chạy khi PostgreSQL volume mới. Khi phát triển schema, cần migration. Nếu dữ liệu local không cần giữ, reset toàn bộ volume:
-
-```bash
-docker compose down -v
-docker compose up -d --build
-```
-
-Lệnh trên xóa dữ liệu PostgreSQL và Redis local.
-
-### Seed thất bại do dữ liệu cũ
-
-```bash
-docker compose logs seed
-docker compose run --rm seed
-```
-
-Nếu lỗi liên quan đến dữ liệu cũ, xem xét reset volume bằng quy trình ở trên.
-
-### Không truy cập được website
-
-```bash
-docker compose ps
-docker compose logs --tail=100 nginx
-docker compose logs --tail=100 frontend
-curl http://localhost:8080/health
-curl http://localhost:8080/api/health
-```
-
-Nếu cổng `8080` đang được sử dụng, đổi mapping trong `docker-compose.yml`, ví dụ `8081:80`, rồi mở `http://localhost:8081` và cập nhật `BASE_URL` tương ứng.
-
-### Login hoặc request POST trả về lỗi CSRF
-
-- Tải lại trang login/account.
-- Xóa cookie site local nếu session cũ bị hỏng.
-- Đảm bảo frontend và API đều được truy cập qua cùng host `localhost:8080`.
-- Không gọi trực tiếp frontend ở cổng `3001` rồi gọi API qua host khác khi kiểm tra CSRF.
-
-### OAuth không hiện nút đăng nhập
-
-Kiểm tra `/api/auth/providers`. Nếu giá trị provider là `false`, kiểm tra Client ID/Secret, callback URL và rebuild backend.
-
-### Không thấy reset link
-
-```bash
-docker compose logs backend-1 backend-2
-```
-
-Chỉ development mới ghi reset link vào log khi chưa cấu hình SMTP.
-
-## 10. Cấu trúc source
-
-```text
-src/
-  app.js                 Express middleware và route registration
-  server.js              HTTP server và Socket.IO
-  config/                PostgreSQL, Redis, Passport
-  controllers/           Xử lý request/response
-  middleware/            Auth, CSRF, rate limit
-  routes/                Auth, profile, catalog, cart, checkout, order, admin
-  services/              Auth, users, catalog, cart, checkout, order, admin, mailer
-frontend/
-  server.js              EJS server và page routes
-  views/                 Các trang giao diện
-  public/                CSS và JavaScript frontend
-db/schema.sql            PostgreSQL schema
-db/ERD.md                Sơ đồ ERD và quan hệ dữ liệu hiện tại
-scripts/migrate.js       Migration bổ sung
-scripts/seed.js          Dữ liệu demo
-nginx/default.conf       Reverse proxy và Socket.IO proxy
-docker-compose.yml       Các service local
-Dockerfile               Node.js image
-```
-
-## 11. Ghi chú trung thực khi đánh giá
-
-- Project hiện chỉ bán máy tính và linh kiện máy tính; seed không có điện thoại hoặc sản phẩm ngoài phạm vi đề.
-- Cart, checkout COD, order, discount redemption, loyalty ledger và customer order history đã có route/service/UI; xem sequence tại `bonus/11-cart.md` và `bonus/12-checkout-order.md`.
-- Admin page/API đã có dashboard, analytics, product/customer/order management và discount; cần kiểm tra end-to-end. Chưa có sửa/xóa discount.
-- Chưa có public URL.
-- Chưa có video demo, thư mục ảnh GitHub Insights hoặc file tự đánh giá rubric trong repository này; các nội dung này cần chuẩn bị riêng khi nộp bài.
-- Đã có GitHub Actions kiểm tra và publish Docker image lên GHCR; đã tích hợp Elasticsearch cho tìm kiếm catalog.
-- Chưa có payment gateway, microservices hoặc AI chatbot/image search/sentiment analysis.
-- Nginx cân bằng round-robin qua hai backend replicas; session lưu trên Redis. Xác nhận từng backend bằng `GET /api/instance`, trả hostname và ghi hostname khi khởi động.
-- Elasticsearch dùng single-node trong network nội bộ Compose, không publish cổng 9200 ra host; dữ liệu sản phẩm được đồng bộ lúc backend khởi động và khi admin thay đổi sản phẩm.
-
-## 12. Thứ tự triển khai tiếp theo
-
-```text
-[1] Kiểm tra end-to-end cart, guest cart và gộp cart khi đăng nhập
-	|
-	v
-[2] Kiểm tra end-to-end checkout, coupon, loyalty và guest order
-	|
-	v
-[3] Kiểm tra transaction tạo order, trừ inventory và trường hợp lỗi/rollback
-	|
-	v
-[4] Cấu hình SMTP; hoàn thiện cập nhật trạng thái và tracking order
-	|
-	v
-[5] Payment gateway; bổ sung sửa/xóa discount nếu cần
-	|
-	v
-[6] Kiểm tra end-to-end admin dashboard/analytics và quyền truy cập
-	|
-	v
-[7] Fix realtime review + test end-to-end
-	|
-	v
-[8] Docker acceptance test bằng môi trường sạch
-```
-
-Mỗi bước chỉ được đánh dấu hoàn thành sau khi có route, giao diện, database transaction cần thiết và kiểm tra thực tế trong Docker.
+    docker compose ps
+
+Xem log khi khoi dong:
+
+    docker compose logs --tail=80 nginx frontend backend-1 backend-2 migrate seed
+
+Compose tu build image va cai cac goi npm trong Dockerfile. Lan dau co the can
+cho PostgreSQL, Redis va Elasticsearch khoi dong; hay kiem tra `docker compose ps`
+va logs neu website chua mo duoc.
+
+2. TAI KHOAN DEMO
+
+Admin (gia tri mac dinh neu chua ghi de trong .env):
+    Email: admin@techhub.local
+    Mat khau: Admin123!ChangeMe
+
+Customer seed:
+    minh.nguyen@example.com / Customer123!ChangeMe
+    linh.tran@example.com  / Customer123!ChangeMe
+    khoa.le@example.com    / Customer123!ChangeMe
+
+Chi dung cac tai khoan nay cho demo local. Neu da thay doi ADMIN_EMAIL,
+ADMIN_PASSWORD hoac du lieu database da ton tai tu lan chay truoc, thong tin
+thuc te co the khac. Khong dung cac mat khau demo tren moi truong public.
+
+3. CAU HINH
+
+- Tao file `.env` tu `.env.example` khi can thay doi cau hinh. Khong commit `.env`.
+- Database, Redis va Elasticsearch duoc Compose noi bo; website truy cap qua Nginx
+  tai cong 8080. Du lieu luu trong named volumes.
+- OAuth Google/Facebook can client ID/secret va callback URL hop le.
+- Gui email that can SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM.
+  Neu chua co SMTP, khong danh gia chuc nang email la da xac minh.
+- Seed tao du lieu ban dau khi database moi duoc migrate. Neu volume database da
+  co du lieu, seed khong co nghia la reset database ve trang thai sach.
+- Khi Elasticsearch chua san sang, hay doi container khoi dong va xem logs.
+  Cau hinh source chua duoc runtime-xac nhan trong moi truong tao tai lieu nay.
+
+4. BONUS
+
+- GitHub Actions: workflow CI/CD da co trong `.github/workflows/ci-cd.yml`.
+  Can push len GitHub va co run thanh cong moi co the tinh la bonus da xac minh.
+- Elasticsearch: tich hop tim kiem catalog da co trong source. Chua duoc xac nhan
+  bang truy van tren Compose hien tai, nen chua tinh la bonus da chay.
+- Nginx round-robin va hai backend: co cau hinh Compose/source, nhung Compose giai
+  doan 6 chua duoc khoi dong xac nhan trong lan lap tai lieu nay.
+- Khong tuyen bo bonus microservices hoac AI.
+
+5. TRANG THAI BANG CHUNG
+
+Tai thoi diem lap tai lieu (25/11/2026), Docker daemon khong truy cap duoc tu
+phien lam viec nay, nen khong the xac nhan runtime cua Compose giai doan 6. Trong
+cac giai doan truoc, nhom da bao cao stack Docker chay, seed 40 san pham va mot so
+route gio hang tra HTTP 200; anh storefront da duoc xem trong hoi thoai. Cac bang
+chung do khong xac nhan toan bo rubric hoac cau hinh Compose hien tai. Vui long
+chay lai ung dung tren may nop bai, luu screenshot/log that va cap nhat
+`Bảng tự đánh giá cho Rubrik.docx` truoc khi nop.
+
+Tai lieu ky thuat chi tiet: `README.md`.
+Bang tu danh gia: `Bảng tự đánh giá cho Rubrik.docx`.
+Bonus va kich ban quay: thu muc `bonus/`.
