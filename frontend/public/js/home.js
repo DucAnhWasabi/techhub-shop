@@ -40,6 +40,37 @@ async function loadCategories() {
       <small>${Number(category.product_count)} sản phẩm</small></a></div>`).join('');
 }
 
+async function loadHomeNavigation() {
+  const response = await fetch('/api/auth/session', { credentials: 'same-origin' });
+  if (!response.ok) return;
+  const { data: sessionUser } = await response.json();
+  if (!sessionUser) return;
+
+  const actions = document.querySelector('#home-auth-actions');
+  if (!actions) return;
+  actions.innerHTML = sessionUser.role === 'admin'
+    ? '<a class="btn btn-outline-info btn-sm" href="/admin">Quản trị</a>'
+      + '<button class="btn btn-info btn-sm fw-semibold" type="button" data-home-logout>Đăng xuất</button>'
+    : '<a class="btn btn-outline-info btn-sm" href="/account">Tài khoản</a>'
+      + '<a class="btn btn-outline-light btn-sm" href="/orders">Lịch sử mua hàng</a>'
+      + '<button class="btn btn-info btn-sm fw-semibold" type="button" data-home-logout>Đăng xuất</button>';
+}
+
+document.addEventListener('click', async (event) => {
+  if (!event.target.closest('[data-home-logout]')) return;
+  try {
+    const { csrfToken } = await fetch('/api/auth/csrf', { credentials: 'same-origin' }).then((response) => response.json());
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'X-CSRF-Token': csrfToken, Accept: 'application/json' }
+    });
+    if (response.ok) window.location.reload();
+  } catch (_error) {
+    // Giữ nguyên trang nếu mạng tạm thời không sẵn sàng.
+  }
+});
+
 document.addEventListener('click', (event) => {
   const button = event.target.closest('[data-source][data-page]');
   if (!button) return;
@@ -48,6 +79,7 @@ document.addEventListener('click', (event) => {
   loadSection(button.dataset.source).catch(() => {});
 });
 
+loadHomeNavigation().catch(() => {});
 Promise.all([loadSection('new'), loadSection('best'), loadCategories()]).catch((error) => {
   document.querySelector('#new-products').innerHTML = `<div class="col-12 text-warning">${escapeHtml(error.message)}</div>`;
 });

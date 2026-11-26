@@ -58,7 +58,7 @@ function oauthCallback(provider) {
       if (!user) return res.redirect('/login?error=oauth-failed');
       try {
         await loginSession(req, user);
-        res.redirect('/account');
+        res.redirect(user.role === 'admin' ? '/admin' : '/');
       } catch (loginError) { next(loginError); }
     })(req, res, next);
   };

@@ -47,6 +47,10 @@ app.get('/api/auth/providers', (_req, res) => res.json({
   google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
   facebook: Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET)
 }));
+// Chỉ trả về vai trò cần thiết để frontend hiển thị thanh điều hướng phù hợp.
+app.get('/api/auth/session', (req, res) => res.json({
+  data: req.user ? { role: req.user.role } : null
+}));
 app.use('/api', csrfProtection);
 app.use('/api/auth', authRoutes);
 app.use('/api/me', profileRoutes);
