@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_address_snapshot JSONB NOT NULL, subtotal_vnd BIGINT NOT NULL, discount_vnd BIGINT NOT NULL DEFAULT 0,
   loyalty_redeemed_vnd BIGINT NOT NULL DEFAULT 0, tax_vnd BIGINT NOT NULL DEFAULT 0, shipping_fee_vnd BIGINT NOT NULL DEFAULT 0,
   total_vnd BIGINT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', discount_id UUID REFERENCES discounts(id) ON DELETE SET NULL,
+  payment_method TEXT NOT NULL DEFAULT 'cod', payment_status TEXT NOT NULL DEFAULT 'unpaid', payment_reference TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS order_items (

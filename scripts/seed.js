@@ -56,16 +56,21 @@ async function seed() {
        SELECT 'TECH5','percent',5,10,id FROM users WHERE email=$1
        ON CONFLICT(code) DO NOTHING`, [adminEmail]
     );
+    const seedCustomerEmail = (process.env.SEED_CUSTOMER_EMAIL || 'minh.nguyen@example.com').trim().toLowerCase();
+    if (seedCustomerEmail === adminEmail) throw new Error('SEED_CUSTOMER_EMAIL phải khác ADMIN_EMAIL để tài khoản thử không trùng tài khoản quản trị.');
     const customers = [
-      ['minh.nguyen@example.com', 'Nguyễn Minh Anh'],
+      [seedCustomerEmail, 'Nguyễn Minh Anh'],
       ['linh.tran@example.com', 'Trần Gia Linh'],
       ['khoa.le@example.com', 'Lê Đăng Khoa']
     ];
-    const customerHash = await bcrypt.hash('Customer123!ChangeMe', 10);
+    const customerPassword = process.env.SEED_CUSTOMER_PASSWORD || 'Customer123!ChangeMe';
+    if (customerPassword.length < 10 || customerPassword.length > 128) throw new Error('SEED_CUSTOMER_PASSWORD cần từ 10 đến 128 ký tự.');
+    const customerHash = await bcrypt.hash(customerPassword, 12);
     for (const [email, fullName] of customers) {
       await client.query(
         `INSERT INTO users(email,full_name,password_hash,role) VALUES($1,$2,$3,'customer')
-         ON CONFLICT(email) DO NOTHING`, [email, fullName, customerHash]
+         ON CONFLICT(email) DO UPDATE SET full_name=EXCLUDED.full_name,password_hash=EXCLUDED.password_hash,
+         role='customer',updated_at=NOW()`, [email, fullName, customerHash]
       );
       await client.query(
         `INSERT INTO addresses(user_id,recipient_name,line1,district,province,is_default)

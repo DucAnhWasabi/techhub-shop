@@ -19,6 +19,10 @@ x-backend-common: &backend-common
     SMTP_USER: ${SMTP_USER:-}
     SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     SMTP_FROM: ${SMTP_FROM:-TechHub <no-reply@techhub.local>}
+    VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+    VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+    VNPAY_URL: ${VNPAY_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+    VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:8080/api/checkout/vnpay-return}
     ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@techhub.local}
     ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!ChangeMe}
   expose:
@@ -75,6 +79,8 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-techhub}:${POSTGRES_PASSWORD:-change-this-local-password}@db:5432/${POSTGRES_DB:-techhub}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@techhub.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!ChangeMe}
+      SEED_CUSTOMER_EMAIL: ${SEED_CUSTOMER_EMAIL:-minh.nguyen@example.com}
+      SEED_CUSTOMER_PASSWORD: ${SEED_CUSTOMER_PASSWORD:-Customer123!ChangeMe}
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -1,76 +1,126 @@
-TECHHUB SHOP - DO AN WEB PROGRAMMING WITH NODE.JS (502070)
-================================================================
+TECHHUB SHOP — SETUP AND EVALUATION GUIDE
+Node.js Web Programming Project (502070)
+Updated: November 26, 2026
+============================================================
 
-1. CHAY UNG DUNG
+1. RUNNING THE APPLICATION
 
-Yeu cau: Docker Desktop dang chay va Docker Compose v2.
-Mo PowerShell tai thu muc goc project, sau do chay:
+Requirements: Docker Desktop and Docker Compose v2. Open PowerShell in the
+project root. If you do not already have a local .env file, create one from the
+example:
 
-    docker compose up -d
+    Copy-Item .env.example .env
 
-Mo website:       http://localhost:8080
-Trang quan tri:   http://localhost:8080/admin
+Then build and start the application:
 
-Kiem tra cac container:
+    docker compose up -d --build
+
+Docker builds the images and installs dependencies. No host npm install is
+required. On the first startup, wait for PostgreSQL, migrations, seed data,
+Redis, Elasticsearch, the frontend, both backend replicas, and Nginx to start.
+Check their status with:
 
     docker compose ps
 
-Xem log khi khoi dong:
+Local URLs:
 
-    docker compose logs --tail=80 nginx frontend backend-1 backend-2 migrate seed
+    Store:       http://localhost:8080
+    Admin:       http://localhost:8080/admin
+    API health:  http://localhost:8080/api/health
 
-Compose tu build image va cai cac goi npm trong Dockerfile. Lan dau co the can
-cho PostgreSQL, Redis va Elasticsearch khoi dong; hay kiem tra `docker compose ps`
-va logs neu website chua mo duoc.
+The project is not currently deployed to a public URL. The default local HTTP
+port is 8080. If you change the published port in docker-compose.yml, update
+BASE_URL and any OAuth or payment callback URLs to match.
 
-2. TAI KHOAN DEMO
+2. SAMPLE ACCOUNTS
 
-Admin (gia tri mac dinh neu chua ghi de trong .env):
-    Email: admin@techhub.local
-    Mat khau: Admin123!ChangeMe
+Default Compose credentials (unless overridden in .env):
 
-Customer seed:
-    minh.nguyen@example.com / Customer123!ChangeMe
-    linh.tran@example.com  / Customer123!ChangeMe
-    khoa.le@example.com    / Customer123!ChangeMe
+    Admin:     admin@techhub.local / Admin123!ChangeMe
+    Customer:  minh.nguyen@example.com / Customer123!ChangeMe
+    Customer:  linh.tran@example.com / Customer123!ChangeMe
+    Customer:  khoa.le@example.com / Customer123!ChangeMe
 
-Chi dung cac tai khoan nay cho demo local. Neu da thay doi ADMIN_EMAIL,
-ADMIN_PASSWORD hoac du lieu database da ton tai tu lan chay truoc, thong tin
-thuc te co the khac. Khong dung cac mat khau demo tren moi truong public.
+SEED_CUSTOMER_EMAIL and SEED_CUSTOMER_PASSWORD in .env can set the primary
+sample customer account. SEED_CUSTOMER_EMAIL must be different from
+ADMIN_EMAIL. The seed task updates the password for existing sample customer
+accounts when it runs. ADMIN_PASSWORD must contain at least 12 characters.
+Use these sample credentials only in a local development environment.
 
-3. CAU HINH
+3. OPTIONAL SERVICE CONFIGURATION
 
-- Tao file `.env` tu `.env.example` khi can thay doi cau hinh. Khong commit `.env`.
-- Database, Redis va Elasticsearch duoc Compose noi bo; website truy cap qua Nginx
-  tai cong 8080. Du lieu luu trong named volumes.
-- OAuth Google/Facebook can client ID/secret va callback URL hop le.
-- Gui email that can SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM.
-  Neu chua co SMTP, khong danh gia chuc nang email la da xac minh.
-- Seed tao du lieu ban dau khi database moi duoc migrate. Neu volume database da
-  co du lieu, seed khong co nghia la reset database ve trang thai sach.
-- Khi Elasticsearch chua san sang, hay doi container khoi dong va xem logs.
-  Cau hinh source chua duoc runtime-xac nhan trong moi truong tao tai lieu nay.
+Google and Facebook sign-in require their respective client ID and secret.
+Register these OAuth callback URLs with each provider:
 
-4. BONUS
+    http://localhost:8080/api/auth/google/callback
+    http://localhost:8080/api/auth/facebook/callback
 
-- GitHub Actions: workflow CI/CD da co trong `.github/workflows/ci-cd.yml`.
-  Can push len GitHub va co run thanh cong moi co the tinh la bonus da xac minh.
-- Elasticsearch: tich hop tim kiem catalog da co trong source. Chua duoc xac nhan
-  bang truy van tren Compose hien tai, nen chua tinh la bonus da chay.
-- Nginx round-robin va hai backend: co cau hinh Compose/source, nhung Compose giai
-  doan 6 chua duoc khoi dong xac nhan trong lan lap tai lieu nay.
-- Khong tuyen bo bonus microservices hoac AI.
+Real email delivery requires SMTP_HOST, SMTP_PORT, SMTP_USER,
+SMTP_PASSWORD, and SMTP_FROM in .env. For Gmail, use an app password. Keep
+credentials in .env; do not commit them. Without SMTP configuration, password
+reset links are logged in development mode and email delivery is unavailable.
 
-5. TRANG THAI BANG CHUNG
+VNPay sandbox checkout uses VNPAY_TMN_CODE, VNPAY_HASH_SECRET, VNPAY_URL, and
+VNPAY_RETURN_URL. Configure sandbox credentials in .env. The default return
+URL is http://localhost:8080/api/checkout/vnpay-return. For a remote sandbox
+IPN callback, configure a publicly reachable URL for
+/api/checkout/vnpay-ipn; localhost cannot receive callbacks from VNPay.
 
-Tai thoi diem lap tai lieu (25/11/2026), Docker daemon khong truy cap duoc tu
-phien lam viec nay, nen khong the xac nhan runtime cua Compose giai doan 6. Trong
-cac giai doan truoc, nhom da bao cao stack Docker chay, seed 40 san pham va mot so
-route gio hang tra HTTP 200; anh storefront da duoc xem trong hoi thoai. Cac bang
-chung do khong xac nhan toan bo rubric hoac cau hinh Compose hien tai. Vui long
-chay lai ung dung tren may nop bai, luu screenshot/log that va cap nhat
-`Bảng tự đánh giá cho Rubrik.docx` truoc khi nop.
+4. APPLICATION FEATURES
 
-Tai lieu ky thuat chi tiet: `README.md`.
-Bang tu danh gia: `Bảng tự đánh giá cho Rubrik.docx`.
-Bonus va kich ban quay: thu muc `bonus/`.
+TechHub is a computer and components shop. It includes product catalog,
+search, filtering, sorting and pagination; product details and variants;
+customer accounts and shipping addresses; guest and signed-in shopping carts;
+discounts and loyalty points; tax and shipping calculations; COD and VNPay
+sandbox checkout; order history; product reviews and comments; and an admin
+dashboard. Feature descriptions and diagrams are in Bonus/README.md. A demo
+outline is in Bonus/demo-script.md.
+
+5. SCALING AND SEARCH CONFIGURATION
+
+- Nginx distributes API traffic between two Express backend replicas.
+- Redis stores shared sessions and supports the Socket.IO adapter.
+- Elasticsearch provides catalog full-text search. The application falls
+  back to PostgreSQL search when Elasticsearch is unavailable.
+- GitHub Actions includes source and Compose checks and a workflow for
+  publishing Docker images to GHCR.
+
+These describe the repository configuration. Provide current run logs,
+screenshots, or other evidence when claiming deployment or evaluation results.
+
+6. KNOWN LIMITATIONS AND SUBMISSION EVIDENCE
+
+- VNPay integration is for sandbox testing only; no production payment
+  credentials or live payment processing are included.
+- The admin dashboard does not provide category create, edit, or delete
+  operations.
+- Analytics does not yet include time-series counts or product-type breakdowns
+  for sold items.
+- Seed product images are placeholders. Replace them with real product images
+  before recording a demonstration.
+- A public deployment URL, demo.mp4, and screenshots documenting team
+  collaboration are not included. Add genuine evidence before submission.
+- Teamwork screenshots should show at least one month of project activity and
+  the required contribution frequency for each member.
+
+7. PROJECT FILES
+
+    src/                 Node.js API, routes, controllers, and services
+    frontend/            Frontend server, views, styles, and browser scripts
+    db/                  PostgreSQL schema and database documentation
+    docker-compose.yml   Local multi-container setup
+    Bonus/               Feature notes, diagrams, and submission checklist
+    git/                 Location for genuine collaboration screenshots
+    Readme.txt           This setup and evaluation guide
+
+Do not include .env files, secrets, tokens, sensitive logs, or database
+volumes in the submission package.
+
+To remove local database and other Compose data volumes and initialize the
+seed data from scratch, run:
+
+    docker compose down -v
+    docker compose up -d --build
+
+The -v option permanently removes PostgreSQL data, including accounts and
+orders. Omit it when you need to preserve existing data.

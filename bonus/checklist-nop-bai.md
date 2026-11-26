@@ -1,45 +1,35 @@
-# Checklist nộp đồ án
+# Checklist hoàn thiện hồ sơ nộp
 
-## Thư mục và mã nguồn
+Đề yêu cầu thư mục nộp theo mẫu mã sinh viên và họ tên thành viên (`id1_hoten1_id2_hoten2...`). Không đổi cấu trúc repository đang phát triển; tạo thư mục đóng gói riêng sau khi các mục bên dưới đã sẵn sàng.
 
-- [ ] Đổi tên thư mục nộp đúng mẫu `id1_hoten1_id2_hoten2` (nhóm 3 người thêm `_id3_hoten3` theo yêu cầu giảng viên).
-- [ ] Bao gồm source, `README.txt`, `README.md`, `Bảng tự đánh giá cho Rubrik.docx`, `bonus/`, `db/`, Dockerfile, Compose, Nginx và `.env.example`.
-- [ ] Không chép `node_modules/`, `.git/` nếu giảng viên không yêu cầu, log build, file dump database hoặc volume dữ liệu.
-- [ ] Giữ `.env` trên máy chạy; không đưa `.env`, mật khẩu thật, OAuth secret, SMTP password hoặc GitHub token vào thư mục nộp hay commit.
-- [ ] Chạy `git status --short` và rà các file cần commit; kiểm tra `.gitignore` có `.env` và `node_modules/`.
-- [ ] Push toàn bộ commit lên GitHub; mở GitHub để xác nhận README, workflow và lịch sử commit hiển thị.
-- [ ] Nếu giảng viên yêu cầu đóng gói ZIP, tạo ZIP từ thư mục đã clean và thử giải nén vào vị trí khác.
+## Gói nộp
 
-## Chạy trên máy trình diễn
+- [ ] Tạo thư mục đúng quy cách đặt tên theo hướng dẫn giảng viên.
+- [x] Mã nguồn, database, Dockerfile và Compose được đặt trong `source/`; không đưa `.env`, secret, `node_modules`, log hoặc dữ liệu volume vào gói.
+- [x] Đặt `Readme.txt` ở gốc gói. Ghi lệnh chạy, URL, tài khoản seed và cấu hình tùy chọn chính xác.
+- [x] Đặt file tự đánh giá `Rubrik.docx` ở gốc; chỉ ghi điểm có bằng chứng thực tế.
+- [x] Có thư mục `Bonus/` chứa mô tả bonus, sơ đồ và hướng dẫn lưu minh chứng; ảnh/log runtime còn thiếu được ghi rõ.
+- [ ] Quay `demo.mp4` độ phân giải 1920×1080, hình/âm thanh rõ, thao tác trực tiếp theo `demo-script.md`; không thay bằng sơ đồ hoặc phần thuyết trình lý thuyết.
+- [ ] Lưu ảnh repository/GitHub Insights và lịch sử commit thể hiện đóng góp cân bằng, hợp tác chủ động, commit sớm/đều; thời gian từ lúc bắt đầu đến hiện tại ít nhất 1 tháng và mỗi thành viên có ít nhất 2 commit mỗi tuần. Bố cục và danh sách ảnh: `git/HUONG-DAN.txt`.
+- [ ] Nếu nộp ZIP, thử giải nén gói và chạy theo đúng hướng dẫn trong Readme.txt.
 
-- [ ] Docker Desktop đang chạy và Compose v2 hoạt động.
-- [ ] Tạo `.env` từ `.env.example`; dùng credential local, không dùng secret production.
-- [ ] Chạy đúng `docker compose up -d`; chờ migration, seed, frontend, hai backend, Nginx, Redis, PostgreSQL và Elasticsearch khởi động.
-- [ ] Chạy `docker compose ps`; chụp vào `evidence/01-compose-ps.png`.
-- [ ] Mở `http://localhost:8080` và `http://localhost:8080/admin`; thử đăng nhập các tài khoản demo.
-- [ ] Kiểm tra `docker compose logs --tail=50 migrate seed backend-1 backend-2 elasticsearch`.
-- [ ] Kiểm tra endpoint hostname và Elasticsearch theo `bonus/14-scaling.md` và `bonus/15-elasticsearch.md`.
-- [ ] Nếu một feature không chạy được, đổi mức tự đánh giá về 0 hoặc 1/2 phù hợp; bỏ feature đó khỏi đoạn “đã hoàn thành” trong video.
+## Chạy và chụp minh chứng
 
-## Bằng chứng hình ảnh/video
+- [ ] Tạo `source/.env` từ `source/.env.example` với credential demo; từ thư mục `source/` chạy `docker compose up -d` theo yêu cầu đề.
+- [ ] Lưu `docker compose ps`, health endpoint, storefront và trang admin sau khi khởi động thành công.
+- [ ] Quay các mục rubric theo thứ tự trong `demo-script.md`: landing, catalog, filters/sort/paging, chi tiết, variants, review/rating, giỏ, checkout, lịch sử và quản trị.
+- [ ] Kiểm tra desktop và mobile; dùng ảnh sản phẩm thật thay các ảnh placeholder trong seed trước khi quay.
+- [ ] Kiểm tra email/OAuth chỉ khi cấu hình SMTP/OAuth thật; ghi rõ nếu không có cấu hình.
+- [ ] Scaling: dùng `/api/instance` để ghi nhận hostname của cả hai backend; ảnh `docker compose ps` một mình chưa chứng minh round-robin.
+- [ ] Elasticsearch: lưu log sync index và kết quả tìm kiếm từ ứng dụng. Không dùng cấu hình source làm bằng chứng runtime.
+- [ ] CI/CD: lưu run thành công trong GitHub Actions; chỉ ghi nhận publish nếu package thật xuất hiện trên GHCR.
+- [ ] Không ghi nhận payment gateway, quản trị danh mục, dashboard thống kê loại/số lượng sản phẩm theo kỳ nếu các phần đó chưa được bổ sung và kiểm tra.
 
-- [ ] Chụp màn hình storefront, catalog/filter/pagination, product detail/variants, cart, checkout, lịch sử đơn, admin và responsive sau khi thao tác thật.
-- [ ] Chụp test validation/security bằng dữ liệu an toàn; không để email, địa chỉ hoặc secret thật của cá nhân trong ảnh.
-- [ ] Chụp hai hostname backend và GitHub Actions/GHCR; chưa có ảnh thì không đánh dấu bonus đã xác minh.
-- [ ] Quay `demo.mp4` ở 1920×1080, âm thanh rõ, theo `bonus/demo-script.md`; dùng dữ liệu demo và không giải thích lý thuyết.
-- [ ] Mở video đầu/cuối để đảm bảo file không lỗi; đặt đúng tên `demo.mp4` nếu rubric yêu cầu.
+## Rà soát trước khi nộp
 
-## GitHub screenshots
+- [ ] So nội dung video, Readme.txt, DOCX và ảnh minh chứng để chúng cùng phản ánh trạng thái thật.
+- [ ] Bảo đảm không đưa credential thật, token reset, `.env` hoặc thông tin cá nhân vào ảnh/video/gói nộp.
+- [ ] Kiểm tra tên file mở được trên máy khác; xác nhận ZIP không chứa thư mục thừa hoặc dump database.
+- [ ] Lưu bản sao gói cuối và URL repository.
 
-- [ ] Screenshot repository trang đầu (tên repository và README).
-- [ ] Screenshot tab commits có đóng góp của từng thành viên theo yêu cầu môn học.
-- [ ] Screenshot tab Actions có run thành công nếu tính CI/CD bonus.
-- [ ] Screenshot GHCR package/tag nếu tính bước publish.
-- [ ] Không chụp `.env`, password, credential reset token hay secret trong terminal.
-
-## Rà soát cuối
-
-- [ ] Tên file đúng chính tả và mở được trên máy khác.
-- [ ] README hướng dẫn một lệnh chạy, URL, tài khoản seed, cấu hình optional và bonus đúng trạng thái.
-- [ ] Rubric DOCX chỉ dùng bằng chứng thật, không cộng điểm cho source chưa chạy.
-- [ ] Cả nhóm giữ bản sao backup ZIP và URL repository.
+Tại lần rà soát tài liệu ngày 26/11/2026, repo chưa có `demo.mp4`, ảnh teamwork trong `git/`, ảnh/log runtime Compose giai đoạn hiện tại hoặc thư mục đóng gói theo ID thành viên. Folder `git/` đang trống. Các mục này cần được tạo từ thao tác thật trước hạn nộp.

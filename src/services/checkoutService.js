@@ -168,11 +168,11 @@ async function placeOrder(req, res, input = {}) {
     const orderNumber = `TH-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
     const inserted = await client.query(
       `INSERT INTO orders(order_number,user_id,email,recipient_name,shipping_address_snapshot,subtotal_vnd,
-       discount_vnd,loyalty_redeemed_vnd,tax_vnd,shipping_fee_vnd,total_vnd,status,discount_id)
-       VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,'pending',$12)
+       discount_vnd,loyalty_redeemed_vnd,tax_vnd,shipping_fee_vnd,total_vnd,status,discount_id,payment_method)
+       VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,'pending',$12,$13)
        RETURNING id,order_number,user_id,email,recipient_name,shipping_address_snapshot,subtotal_vnd,
-       discount_vnd,loyalty_redeemed_vnd,tax_vnd,shipping_fee_vnd,total_vnd,status,created_at`,
-      [orderNumber,customer.id,email,shippingAddress.recipientName,JSON.stringify(shippingAddress),subtotal,discountVnd,totals.loyaltyRedeemedVnd,totals.taxVnd,totals.shippingFeeVnd,totals.totalVnd,discount?.id || null]
+       discount_vnd,loyalty_redeemed_vnd,tax_vnd,shipping_fee_vnd,total_vnd,status,payment_method,created_at`,
+      [orderNumber,customer.id,email,shippingAddress.recipientName,JSON.stringify(shippingAddress),subtotal,discountVnd,totals.loyaltyRedeemedVnd,totals.taxVnd,totals.shippingFeeVnd,totals.totalVnd,discount?.id || null, input.paymentMethod === 'vnpay' ? 'vnpay' : 'cod']
     );
     order = inserted.rows[0];
     for (const item of items) {
@@ -225,8 +225,10 @@ async function placeOrder(req, res, input = {}) {
     'SELECT product_name_snapshot AS product_name,variant_name_snapshot AS variant_name,quantity,line_total_vnd FROM order_items WHERE order_id=$1 ORDER BY id', [order.id]
   );
   let emailSent = false;
-  try { emailSent = await sendOrderConfirmation({ ...order, items: orderItems }); }
-  catch (error) { console.error(`Không gửi được email xác nhận đơn ${order.order_number}:`, error.message); }
+  if (order.payment_method !== 'vnpay') {
+    try { emailSent = await sendOrderConfirmation({ ...order, items: orderItems }); }
+    catch (error) { console.error(`Không gửi được email xác nhận đơn ${order.order_number}:`, error.message); }
+  }
   return { ...order, emailSent, pointsEarned };
 }
 

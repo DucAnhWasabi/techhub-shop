@@ -1,9 +1,13 @@
 # Bonus: Nginx round-robin và stateless backend
 
+![Sơ đồ triển khai Compose](./diagrams/14-scaling.svg)
+
+Luồng request: trình duyệt → Nginx → frontend hoặc một trong hai API backend. Redis chia sẻ session và hỗ trợ Socket.IO giữa API; PostgreSQL giữ dữ liệu nghiệp vụ; Elasticsearch phục vụ tìm kiếm. Hai backend là hai replica của cùng ứng dụng Express, không phải microservice.
+
 ## Thiết kế trong source
 
-- `docker-compose.yml` khai báo hai service API: `backend-1` và `backend-2`.
-- `nginx/default.conf` khai báo cả hai địa chỉ trong upstream `shop_backend`. Nginx dùng round-robin mặc định và DNS resolver Docker để cập nhật địa chỉ container.
+- `source/docker-compose.yml` khai báo hai service API: `backend-1` và `backend-2`.
+- `source/nginx/default.conf` khai báo cả hai địa chỉ trong upstream `shop_backend`. Nginx dùng round-robin mặc định và DNS resolver Docker để cập nhật địa chỉ container.
 - Session Express nằm trong Redis. Catalog/cart/order nằm trong PostgreSQL; hai API process không cần session trong RAM riêng.
 - `GET /api/instance` trả `hostname`. Backend cũng ghi hostname khi khởi động.
 
@@ -13,13 +17,13 @@
 
 ## Chạy và chụp bằng chứng
 
-1. Khởi động Docker Desktop, tại root repository chạy `docker compose up -d`.
+1. Khởi động Docker Desktop, từ thư mục repository chạy `cd source` rồi `docker compose up -d`.
 2. Chụp `docker compose ps backend-1 backend-2 nginx` vào `evidence/14-scaling-containers.png`.
 3. Trong PowerShell chạy:
 
    ```powershell
    1..10 | ForEach-Object {
-     (Invoke-RestMethod http://localhost:8080/api/instance).hostname
+     (Invoke-RestMethod http://localhost:8081/api/instance).hostname
    } | Group-Object
    ```
 

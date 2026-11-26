@@ -20,6 +20,9 @@ async function migrate() {
     CREATE UNIQUE INDEX IF NOT EXISTS one_cart_per_user ON carts(user_id) WHERE user_id IS NOT NULL;
     ALTER TABLE variants ADD COLUMN IF NOT EXISTS cost_vnd BIGINT NOT NULL DEFAULT 0 CHECK (cost_vnd >= 0);
     ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_cost_vnd BIGINT NOT NULL DEFAULT 0 CHECK (unit_cost_vnd >= 0);
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'cod';
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid';
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference TEXT;
   `);
   console.log('Migration hoàn tất.');
   await db.end();

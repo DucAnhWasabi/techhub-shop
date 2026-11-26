@@ -2,7 +2,7 @@
 
 ## Workflow trong source
 
-File `.github/workflows/ci-cd.yml` chạy khi có pull request hoặc push lên `main`:
+File `.github/workflows/ci-cd.yml` ở root repository chạy khi có pull request hoặc push lên `main`; workflow cài dependency và build ứng dụng trong `source/`:
 
 - Job `checks`: cài dependency, chạy `npm run check`, kiểm tra Docker Compose và build Docker image.
 - Job `publish`: chỉ chạy sau `checks` thành công khi push lên `main`; đăng nhập GHCR bằng `GITHUB_TOKEN` rồi publish image có tag `latest` và SHA.

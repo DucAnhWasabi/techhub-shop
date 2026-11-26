@@ -5,9 +5,9 @@
 ## 0:00–0:30 — Khởi động
 
 1. Mở PowerShell tại thư mục project.
-2. Chạy `docker compose up -d`.
+2. Vào thư mục `source/` rồi chạy `docker compose up -d`.
 3. Chạy `docker compose ps`; lia qua frontend, nginx, db, redis, migrate/seed, `backend-1`, `backend-2`, Elasticsearch.
-4. Mở `http://localhost:8080`.
+4. Mở `http://localhost:8081`.
 
 ## 0:30–2:00 — Landing và catalog
 
@@ -58,8 +58,8 @@
 
 1. Thử gửi form thiếu/không hợp lệ để hiện client/server validation; thử gọi trang admin bằng customer và quay kết quả từ chối.
 2. Chuyển DevTools responsive mobile, quay catalog/cart có thể sử dụng trên viewport nhỏ.
-3. Trong PowerShell chạy `1..10 | ForEach-Object { (Invoke-RestMethod http://localhost:8080/api/instance).hostname } | Group-Object`; giữ kết quả có hai hostname.
-4. Tìm sản phẩm `Invoke-RestMethod 'http://localhost:8080/api/products?q=ThinkCore'`; cho thấy kết quả. Kiểm tra log sync Elasticsearch.
+3. Trong PowerShell chạy `1..10 | ForEach-Object { (Invoke-RestMethod http://localhost:8081/api/instance).hostname } | Group-Object`; giữ kết quả có hai hostname.
+4. Tìm sản phẩm `Invoke-RestMethod 'http://localhost:8081/api/products?q=ThinkCore'`; cho thấy kết quả. Kiểm tra log sync Elasticsearch.
 5. Nếu workflow đã chạy: mở GitHub Actions run xanh và package GHCR. Không đưa credential lên video.
 6. Kết thúc ở trang chủ; dừng capture.
 

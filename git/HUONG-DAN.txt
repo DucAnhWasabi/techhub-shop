@@ -1,0 +1,63 @@
+HUONG DAN CHUAN BI ANH MINH CHUNG GITHUB/GITLAB
+================================================
+
+MUC DICH
+
+Thu muc nay dung de nop anh chup that ve qua trinh lam viec nhom tren repo.
+Anh can chung minh du an dien ra it nhat 1 thang, moi thanh vien co it nhat
+2 commit moi tuan, dong gop can bang va co hop tac chu dong. Khong chup anh
+gia lap hoac chi chup mot trang README de thay cho lich su lam viec.
+
+BO CUC DE XUAT
+
+git/
+  HUONG-DAN.txt
+  01-repository.png
+  02-contributors.png
+  03-commit-history-start.png
+  04-commit-history-end.png
+  05-member-<ten>-week-<so>.png
+  06-pull-requests.png       (neu nhom co dung pull request)
+  07-issues-project.png      (neu nhom co dung issue/project board)
+
+CAC ANH CAN CHUP
+
+1. 01-repository.png
+   Trang repo GitHub/GitLab, thay ten repo va danh sach thanh vien/organization
+   neu nen tang hien thi thong tin nay.
+
+2. 02-contributors.png
+   Trang Contributors/Insights (GitHub) hoac trang dong gop tuong ung (GitLab).
+   Can thay ten tai khoan va phan bo dong gop cua tung thanh vien.
+
+3. 03-commit-history-start.png va 04-commit-history-end.png
+   Lich su commit o giai doan dau va giai doan gan hien tai. De chung minh khoang
+   thoi gian it nhat 1 thang, anh phai hien ngay thang commit; nen chup cac commit
+   som nhat va moi nhat trong cung repo.
+
+4. 05-member-<ten>-week-<so>.png
+   Chup lich su commit theo tung tuan va tung thanh vien. Dam bao co it nhat
+   2 commit moi tuan cho moi thanh vien trong khoang thoi gian du an. Neu nhieu
+   tuan, tao mot anh cho moi thanh vien moi tuan hoac mot anh tong hop doc ro
+   duoc ten tac gia va thoi diem commit.
+
+5. 06-pull-requests.png va 07-issues-project.png (neu co)
+   Dung de bo sung bang chung phan chia cong viec, trao doi, review va phoi hop.
+   Day la anh ho tro; chung khong thay the yeu cau ve thoi gian va tan suat commit.
+
+LUU Y KHI CHUP
+
+- De hien ten tai khoan/tac gia, ngay thang va repo tren anh; khong cat mat thong
+  tin can de doi chieu.
+- Dung mot cach nhan dien thanh vien nhat quan giua Contributors va commit log.
+- Khong sua noi dung, ngay thang hay so lieu tren anh.
+- Neu lich su thuc te chua du 1 thang hoac co thanh vien chua dat 2 commit/tuan,
+  khong tuyen bo da dat. Bao lai tinh trang that va hoi giang vien cach xu ly.
+- Neu co commit bang email khac nhau, lien ket email voi tai khoan GitHub/GitLab
+  truoc khi chup Contributors de dong gop duoc tinh dung.
+
+TRANG THAI HIEN TAI
+
+Thu muc nay chua co anh minh chung. Hay chup truc tiep tu repo GitHub/GitLab cua
+nhom va dat theo ten goi y o tren. Khong nop rieng file HUONG-DAN.txt de thay
+cho cac anh lich su that.

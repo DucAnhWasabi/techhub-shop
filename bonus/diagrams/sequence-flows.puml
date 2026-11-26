@@ -1,0 +1,563 @@
+﻿' 01-registration.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "User Service" as Users #DCFCE7
+database "CSRF Session" as CSRF #EDE9FE
+database "PostgreSQL" as DB #EDE9FE
+database "Redis Session" as Redis #EDE9FE
+Customer -> Browser : Open /register
+Browser -> API : GET /api/auth/csrf
+API -> CSRF : Create or read session CSRF token
+CSRF --> API : csrfToken
+API --> Browser : Return csrfToken
+Customer -> Browser : Submit email, name, address, password
+Browser -> API : POST /api/auth/register + X-CSRF-Token
+API -> CSRF : Validate token
+API -> Users : registerWithPassword(input)
+Users -> Users : Validate identity and password length
+Users -> Users : Hash password with bcrypt
+Users -> DB : BEGIN
+Users -> DB : INSERT users
+Users -> DB : INSERT default address
+Users -> DB : COMMIT
+API -> Redis : Save authenticated session
+API --> Browser : 201 user data
+Browser --> Customer : Redirect to /account
+@enduml
+
+' Admin diagrams are split into five panels in SVG to keep the labels legible.
+@startuml
+title 13a - Admin dashboard
+actor Admin #DBEAFE
+boundary Browser #BFDBFE
+control API #DCFCE7
+control Guard as "requireAdmin" #DCFCE7
+control Service as "Admin Service" #DCFCE7
+database DB as "PostgreSQL" #EDE9FE
+Admin -> Browser : Open /admin
+Browser -> API : GET dashboard and analytics
+API -> Guard : Check admin session
+Guard -> Service : Read dashboard and period report
+Service -> DB : Query users, orders, order items and costs
+DB --> Service : Stats and report rows
+Service --> Guard : Dashboard data
+Guard --> API : Authorized response
+API --> Browser : Render dashboard
+@enduml
+
+@startuml
+title 13b - Admin products
+actor Admin #DBEAFE
+boundary Browser #BFDBFE
+control API #DCFCE7
+control Guard as "requireAdmin" #DCFCE7
+control Service as "Admin Service" #DCFCE7
+database DB as "PostgreSQL" #EDE9FE
+database ES as "Elasticsearch" #EDE9FE
+Admin -> Browser : Create, edit or delete product
+Browser -> API : POST, PATCH or DELETE + CSRF
+API -> Guard : Check admin session
+Guard -> Service : Validate product, images and variants
+Service -> DB : Transaction: product, images, variants
+DB --> Service : Commit result
+Service -> ES : Index changed product
+ES --> Service : Best-effort index result
+Service --> Guard : Operation result
+Guard --> API : Authorized response
+API --> Browser : Show product or error
+@enduml
+
+@startuml
+title 13c - Admin customers
+actor Admin #DBEAFE
+boundary Browser #BFDBFE
+control API #DCFCE7
+control Guard as "requireAdmin" #DCFCE7
+control Service as "Admin Service" #DCFCE7
+database DB as "PostgreSQL" #EDE9FE
+Admin -> Browser : Search, edit or ban customer
+Browser -> API : GET or PATCH users + CSRF
+API -> Guard : Check admin session
+Guard -> Service : Read or update customer only
+Service -> DB : SELECT or UPDATE users where role=customer
+DB --> Service : Customer rows
+Service --> Guard : Operation result
+Guard --> API : Authorized response
+API --> Browser : Render customer result
+@enduml
+
+@startuml
+title 13d - Admin orders
+actor Admin #DBEAFE
+boundary Browser #BFDBFE
+control API #DCFCE7
+control Guard as "requireAdmin" #DCFCE7
+control Service as "Admin Service" #DCFCE7
+database DB as "PostgreSQL" #EDE9FE
+Admin -> Browser : Filter, open or update order
+Browser -> API : GET order or PATCH status + CSRF
+API -> Guard : Check admin session
+Guard -> Service : Query order or validate status change
+Service -> DB : Read order/items or write status history
+DB --> Service : Order and history rows
+Service --> Guard : Order result
+Guard --> API : Authorized response
+API --> Browser : Render order detail
+@enduml
+
+@startuml
+title 13e - Admin discounts
+actor Admin #DBEAFE
+boundary Browser #BFDBFE
+control API #DCFCE7
+control Guard as "requireAdmin" #DCFCE7
+control Service as "Admin Service" #DCFCE7
+database DB as "PostgreSQL" #EDE9FE
+Admin -> Browser : View list or create a 5-character code
+Browser -> API : GET or POST discounts + CSRF
+API -> Guard : Check admin session
+Guard -> Service : Validate format, value and maximum uses
+Service -> DB : Read redemptions or insert discount
+DB --> Service : Codes, counts and applied orders
+Service --> Guard : Operation result
+Guard --> API : Authorized response
+API --> Browser : Render discount list
+@enduml
+
+' 02-login.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Auth Service" as Auth #DCFCE7
+database "Redis Rate Limit" as Limit #EDE9FE
+database "PostgreSQL" as DB #EDE9FE
+database "Redis Session" as Session #EDE9FE
+Customer -> Browser : Open /login
+Browser -> API : GET /api/auth/csrf
+API --> Browser : Return csrfToken
+Customer -> Browser : Submit email and password
+Browser -> API : POST /api/auth/login + X-CSRF-Token
+API -> Limit : Check login rate limit
+Limit --> API : Allow or reject request
+API -> Auth : authenticate(email, password)
+Auth -> DB : SELECT user by normalized email
+DB --> Auth : User and password hash
+Auth -> Auth : Compare password with bcrypt
+Auth --> API : Authenticated user or null
+API -> Session : Create Passport session
+API --> Browser : User data or 401 error
+Browser --> Customer : Redirect to /account on success
+@enduml
+
+' 03-logout.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Passport" as Passport #DCFCE7
+database "Redis Session" as Session #EDE9FE
+Customer -> Browser : Click Đăng xuất
+Browser -> API : POST /api/auth/logout + X-CSRF-Token
+API -> Passport : req.logout()
+Passport --> API : Passport identity removed
+API -> Session : Destroy session
+Session --> API : Session deleted
+API --> Browser : Clear techhub.sid cookie; logout success
+Browser --> Customer : Redirect to /
+@enduml
+
+' 04-oauth.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Passport" as Passport #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+database "Redis Session" as Session #EDE9FE
+entity "Google or Facebook" as Provider #FEE2E2
+Customer -> Browser : Click OAuth provider
+Browser -> API : GET /api/auth/{provider}
+API -> Passport : Check configured strategy
+Passport --> Browser : Redirect to provider authorization
+Browser -> Provider : Authorize account
+Provider --> Browser : Redirect with callback code
+Browser -> API : GET /api/auth/{provider}/callback
+API -> Provider : Exchange code and load profile
+Provider --> API : Provider id, email and display name
+API -> DB : Find oauth_accounts by provider and provider_user_id
+alt Existing linked account
+DB --> API : Existing customer
+else New provider account
+API -> DB : Find or create user by email
+API -> DB : Insert oauth_accounts link
+DB --> API : Customer account
+end
+API -> Session : Create Passport session
+API --> Browser : Redirect to /account
+@enduml
+
+' 05-catalog.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Visitor" as Visitor #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Catalog Service" as Catalog #DCFCE7
+database "Elasticsearch" as ES #EDE9FE
+database "PostgreSQL" as DB #EDE9FE
+Visitor -> Browser : Open /products or /search?q=...
+Browser -> API : GET /api/categories
+API -> Catalog : getCategories()
+Catalog -> DB : Load active categories and product counts
+DB --> Catalog : Categories
+Catalog --> API : Category options
+API --> Browser : Category options
+Browser -> API : GET /api/brands
+API -> Catalog : getBrands()
+Catalog -> DB : Load active brands and product counts
+DB --> Catalog : Brands
+Catalog --> API : Brand options
+API --> Browser : Brand options
+Browser -> API : GET /api/products?page&limit&q&category&brand&minPrice&maxPrice&sort
+API -> Catalog : listProducts(query)
+Catalog -> Catalog : Validate filters, sort and pagination
+opt q is present
+Catalog -> ES : Fuzzy full-text search
+ES --> Catalog : Matching product IDs (or fallback on error)
+end
+Catalog -> DB : Count matching products
+DB --> Catalog : Total count
+Catalog -> DB : Load page with filters and sorting
+DB --> Catalog : Product rows
+Catalog --> API : data, page, limit, totalPages
+API --> Browser : Catalog result
+Browser --> Visitor : Render grid/list and page numbers
+@enduml
+
+' 06-product-detail.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Visitor" as Visitor #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Catalog Service" as Catalog #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+Visitor -> Browser : Open /products/{slug}
+Browser -> API : GET /api/products/{slug}
+API -> Catalog : getProduct(slug, optional user id)
+Catalog -> DB : Load product, brand, category and rating aggregate
+DB --> Catalog : Product summary
+Catalog -> DB : Load product_images ordered by position
+DB --> Catalog : Product images
+Catalog -> DB : Load active variants with price and stock
+DB --> Catalog : Variants
+Catalog --> API : Product detail object
+API --> Browser : Product, images, variants and rating summary
+Browser --> Visitor : Render gallery, description and variant selector
+Visitor -> Browser : Select a variant
+Browser -> Browser : Update displayed variant price locally
+@enduml
+
+' 07-review-rating-realtime.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Visitor" as Visitor #DBEAFE
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Socket.IO" as Socket #DCFCE7
+control "Express API" as API #DCFCE7
+control "Review Controller" as Review #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+database "Redis Adapter" as Redis #EDE9FE
+Visitor -> Browser : Open product detail
+Browser -> API : GET /api/products/{id}/reviews?page=1
+API -> DB : Load product reviews and total
+DB --> API : Review page
+API --> Browser : Review page
+Browser -> Socket : Connect and emit product:join
+Socket -> DB : Verify active product
+Socket --> Browser : Join product room
+Visitor -> Browser : Submit comment and display name
+Browser -> API : POST /api/products/{id}/reviews + CSRF token
+API -> Review : Validate body, author and product
+Review -> DB : INSERT review
+DB --> Review : Created review
+Review -> Socket : Emit product:review:new to room
+Socket -> Redis : Broadcast event between backend instances
+Redis --> Socket : Deliver event to connected clients
+Socket -> Browser : New review event
+API --> Browser : 201 created review
+Customer -> Browser : Select 1-5 stars
+Browser -> API : POST /api/products/{id}/ratings + CSRF token
+API -> Review : Require customer and validate stars
+Review -> DB : INSERT or UPDATE rating
+DB --> Review : Saved rating
+Review -> DB : Calculate average and count
+DB --> Review : Rating aggregate
+Review -> Socket : Emit product:rating:updated
+Socket -> Redis : Broadcast rating event
+Redis --> Socket : Deliver event to clients
+Socket -> Browser : Updated rating aggregate
+API --> Browser : Updated rating result
+@enduml
+
+' 08-profile-address.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Customer Middleware" as Auth #DCFCE7
+control "User Service" as Users #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+Customer -> Browser : Open /account
+Browser -> API : GET /api/me
+API -> Auth : Require authenticated, non-banned customer
+Auth -> Users : getProfile(user.id)
+Users -> DB : Load user profile
+Users -> DB : Load all addresses, default first
+DB --> Users : Profile and addresses
+Users --> API : Account data
+API --> Browser : Account data
+Customer -> Browser : Add or edit delivery address
+Browser -> API : POST or PATCH /api/me/addresses + CSRF token
+API -> Auth : Verify session
+API -> Users : Validate address fields
+Users -> DB : BEGIN and lock user
+Users -> DB : Clear old default when necessary
+Users -> DB : INSERT or UPDATE address
+Users -> DB : COMMIT
+API --> Browser : Saved address
+Customer -> Browser : Set default or delete address
+Browser -> API : PATCH /default or DELETE /addresses/{id}
+API -> Users : Verify address belongs to current user
+Users -> DB : Update default or delete address
+Users --> API : Operation result
+API --> Browser : Operation result
+@enduml
+
+' 09-change-password.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Auth Service" as Auth #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+Customer -> Browser : Submit current and new password
+Browser -> API : PATCH /api/me/password + CSRF token
+API -> Auth : Require authenticated customer
+API -> Auth : changePassword(user.id, current, new)
+Auth -> Auth : Validate new password length
+Auth -> DB : Load current password hash
+DB --> Auth : Password hash
+Auth -> Auth : Compare current password with bcrypt
+Auth -> Auth : Hash new password with bcrypt
+Auth -> DB : UPDATE users.password_hash
+Auth -> DB : Invalidate active password reset tokens
+API --> Browser : Password changed successfully
+Browser --> Customer : Show success notice
+@enduml
+
+' 10-password-recovery.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Auth Service" as Auth #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+database "Redis Rate Limit" as Redis #EDE9FE
+entity "Nodemailer or Local Log" as Mailer #FEE2E2
+Customer -> Browser : Submit email at /forgot-password
+Browser -> API : POST /api/auth/forgot-password + CSRF token
+API -> Redis : Check forgot-password rate limit
+API -> Auth : requestPasswordReset(email)
+Auth -> DB : Find active user by normalized email
+alt User exists
+Auth -> Auth : Generate random token and SHA-256 hash
+Auth -> DB : Delete old unused tokens
+Auth -> DB : Insert token hash with 30-minute expiry
+Auth -> Mailer : Send reset URL through SMTP
+Mailer -> Customer : Reset email
+else SMTP is not configured in development
+Auth -> Mailer : Write reset URL to backend log
+end
+API --> Browser : Generic success message
+Customer -> Browser : Open reset URL and submit new password
+Browser -> API : POST /api/auth/reset-password + token
+API -> Auth : resetPassword(token, newPassword)
+Auth -> DB : Find unused, unexpired token with row lock
+Auth -> DB : Update password hash
+Auth -> DB : Mark reset tokens as used
+API --> Browser : Password reset success
+@enduml
+
+' 11-cart.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Visitor" as Visitor #DBEAFE
+actor "Customer" as Customer #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Cart Service" as Cart #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+Visitor -> Browser : Mở /cart hoặc thêm variant từ product detail
+Browser -> API : GET /api/cart hoặc POST /api/cart/items
+API -> Cart : Resolve cart theo session user hoặc cookie techhub.cart
+Cart -> Cart : Hash guest token bằng SHA-256
+Cart -> DB : Tìm hoặc tạo carts và đọc cart_items
+DB --> Cart : Cart items
+Cart --> API : Danh sách variant, giá, tồn kho và tổng tiền
+API --> Browser : Danh sách variant, giá, tồn kho và tổng tiền
+Visitor -> Browser : Sửa số lượng, xóa item hoặc xóa toàn bộ
+Browser -> API : PATCH/DELETE /api/cart/items hoặc DELETE /api/cart + CSRF
+API -> Cart : Kiểm tra item thuộc cart hiện tại và tồn kho
+Cart -> DB : Cập nhật hoặc xóa cart_items
+API --> Browser : Cart đã cập nhật
+Visitor -> Browser : Đăng nhập
+Browser -> API : POST /api/auth/login
+API --> Browser : Session customer
+Browser -> API : GET /api/cart
+API -> Cart : Resolve customer cart và tìm guest cart từ cookie
+Cart -> DB : Gộp item, giới hạn số lượng theo tồn kho, xóa guest cart
+Cart --> API : Cart customer đã gộp
+API --> Browser : Cart customer đã gộp
+@enduml
+
+' 12-checkout-order.md
+@startuml
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam ParticipantBorderColor #1F2937
+skinparam ActorBorderColor #1F2937
+skinparam LifeLineBorderColor #374151
+skinparam LifeLineBackgroundColor #FFFFFF
+actor "Customer" as Customer #DBEAFE
+actor "Guest" as Guest #DBEAFE
+boundary "Browser" as Browser #BFDBFE
+control "Express API" as API #DCFCE7
+control "Checkout Service" as Checkout #DCFCE7
+control "Cart Service" as Cart #DCFCE7
+database "PostgreSQL" as DB #EDE9FE
+entity "Mailer or local log" as Mailer #FEE2E2
+Customer -> Browser : Chọn địa chỉ lưu hoặc nhập địa chỉ khác
+Guest -> Browser : Nhập email, tên và địa chỉ giao hàng
+Browser -> API : POST /api/checkout/quote + coupon/điểm + CSRF
+API -> Cart : Resolve cart hiện tại
+API -> Checkout : Kiểm tra item, tồn kho, coupon và số dư loyalty
+Checkout -> DB : Đọc cart, variants, discount và loyalty_balance
+Checkout -> Checkout : Tính giảm giá, thuế 10%, phí ship, COD và điểm
+Checkout --> API : Quote đã tính
+API --> Browser : Quote để người mua xác nhận
+Customer -> Browser : Xác nhận đặt COD
+Guest -> Browser : Xác nhận đặt COD
+Browser -> API : POST /api/checkout/place-order + thông tin giao hàng + CSRF
+API -> Checkout : Bắt đầu transaction đặt hàng
+Checkout -> Cart : Resolve cart
+Checkout -> DB : Lock cart/items, variants, customer và coupon
+Checkout -> DB : Tạo/liên kết customer cho guest theo email
+Checkout -> DB : Insert order và order_items snapshot
+Checkout -> DB : Trừ tồn kho; ghi status history
+Checkout -> DB : Tăng used_count, ghi redemption và loyalty ledger
+Checkout -> DB : Xóa cart_items và COMMIT
+Checkout -> Mailer : Gửi email xác nhận sau commit
+Mailer --> Checkout : Gửi được hoặc lỗi được ghi log
+API --> Browser : Mã đơn, tổng COD, trạng thái email
+Customer -> Browser : Mở lịch sử /orders
+Browser -> API : GET /api/me/orders?page&limit
+API -> DB : Đọc các đơn của customer hiện tại
+DB --> API : Danh sách đơn phân trang
+API --> Browser : Danh sách đơn phân trang
+Customer -> Browser : Mở chi tiết đơn
+Browser -> API : GET /api/me/orders/{id}
+API -> DB : Đọc order, snapshot items và status history theo owner
+DB --> API : Chi tiết đơn và lịch sử trạng thái
+API --> Browser : Chi tiết đơn và lịch sử trạng thái
+@enduml

@@ -122,8 +122,10 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const button = document.querySelector('#place-order'); button.disabled = true; button.textContent = 'Đang tạo đơn…';
   try {
-    const payload = { ...checkoutData, discountCode: document.querySelector('#discountCode').value.trim().toUpperCase(), pointsToRedeem: Number(document.querySelector('#pointsToRedeem').value || 0) };
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const payload = { ...checkoutData, paymentMethod, discountCode: document.querySelector('#discountCode').value.trim().toUpperCase(), pointsToRedeem: Number(document.querySelector('#pointsToRedeem').value || 0) };
     const result = await api('/api/checkout/place-order', 'POST', payload);
+    if (paymentMethod === 'vnpay' && result.paymentUrl) { window.location.assign(result.paymentUrl); return; }
     form.classList.add('d-none'); document.querySelector('.checkout-steps').classList.add('d-none');
     document.querySelector('#checkout-done').classList.remove('d-none');
     document.querySelector('#checkout-done').innerHTML = `<div class="eyebrow">ORDER RECEIVED</div><h2 class="h3 mt-2">Cảm ơn bạn đã đặt hàng!</h2><p>Mã đơn: <strong>${escapeHtml(result.order_number)}</strong></p><p>Tổng thanh toán khi nhận hàng: <strong>${money(result.total_vnd)}</strong></p><p class="text-secondary">${result.emailSent ? 'Email xác nhận đã được gửi.' : 'Đơn đã lưu. Email xác nhận sẽ được gửi khi cửa hàng cấu hình SMTP.'}</p>${profile ? `<a class="btn btn-info" href="/orders/${result.id}">Xem chi tiết đơn</a>` : '<a class="btn btn-info" href="/">Về cửa hàng</a><p class="small text-secondary mt-3">Tạo mật khẩu qua Quên mật khẩu bằng email này để xem đơn trong lịch sử sau này.</p>'}`;
@@ -139,3 +141,9 @@ loadProfile().catch(() => {}).finally(() => {
     setAddressFields(selected); toggleAddressFields(false);
   }
 });
+
+const paymentResult = new URLSearchParams(window.location.search).get('payment');
+if (paymentResult) {
+  show(paymentResult === 'success' ? 'Thanh toán VNPay thành công. Đơn hàng đã được xác nhận và email sẽ được gửi.' : 'Thanh toán chưa thành công. Đơn hàng chưa được xác nhận.', paymentResult !== 'success');
+  notice.classList.remove('d-none');
+}

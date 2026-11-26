@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 
 function createTransport() {
-  if (!process.env.SMTP_HOST) return null;
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) return null;
   const port = Number(process.env.SMTP_PORT || 587);
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -24,7 +24,7 @@ async function sendPasswordReset(email, token) {
     return;
   }
   await transport.sendMail({
-    from: process.env.SMTP_FROM || 'TechHub <no-reply@techhub.local>',
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,
     subject: 'Khôi phục mật khẩu TechHub',
     text: `Mở liên kết sau để đặt mật khẩu mới (có hiệu lực 30 phút): ${resetUrl}`,
@@ -41,11 +41,11 @@ async function sendOrderConfirmation(order) {
   const lines = order.items.map((item) => `${item.product_name} — ${item.variant_name} × ${item.quantity}: ${Number(item.line_total_vnd).toLocaleString('en-US')}đ`);
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   await transport.sendMail({
-    from: process.env.SMTP_FROM || 'TechHub <no-reply@techhub.local>',
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: order.email,
     subject: `TechHub xác nhận đơn hàng ${order.order_number}`,
-    text: `Cảm ơn bạn đã đặt hàng.\nMã đơn: ${order.order_number}\n${lines.join('\n')}\nTổng thanh toán COD: ${Number(order.total_vnd).toLocaleString('en-US')}đ`,
-    html: `<h2>TechHub đã nhận đơn hàng</h2><p>Mã đơn: <strong>${escapeHtml(order.order_number)}</strong></p><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul><p>Tổng thanh toán COD: <strong>${Number(order.total_vnd).toLocaleString('en-US')}đ</strong></p>`
+    text: `Cảm ơn bạn đã đặt hàng.\nMã đơn: ${order.order_number}\n${lines.join('\n')}\nTổng thanh toán: ${Number(order.total_vnd).toLocaleString('en-US')}đ`,
+    html: `<h2>TechHub đã nhận đơn hàng</h2><p>Mã đơn: <strong>${escapeHtml(order.order_number)}</strong></p><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul><p>Tổng thanh toán: <strong>${Number(order.total_vnd).toLocaleString('en-US')}đ</strong></p>`
   });
   return true;
 }
